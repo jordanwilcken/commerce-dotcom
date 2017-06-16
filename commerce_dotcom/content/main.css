@@ -1,0 +1,39 @@
+﻿button {
+    min-height: 3em;
+    width: 8em;
+}
+
+main {
+    display: flex;
+    flex-flow: column;
+    height: 100vh;
+}
+
+.main-row {
+    display: flex;
+    flex: 1;
+}
+
+.quadrant {
+    flex: 1;
+    padding: 1em;
+}
+
+.quadrant-row {
+    border-bottom: 1px solid black;
+    display: flex;
+    padding: 0.5em 0;
+}
+
+.submit-button {
+    width: 100%;
+}
+
+.input-column {
+    display: flex;
+    flex-flow: column;
+}
+
+ul {
+    list-style: none;
+}
