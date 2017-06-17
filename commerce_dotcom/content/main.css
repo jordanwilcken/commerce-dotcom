@@ -16,7 +16,7 @@ main {
 
 .quadrant {
     flex: 1;
-    padding: 1em;
+    padding: 1em 10vw;
 }
 
 .quadrant-row {
@@ -32,6 +32,10 @@ main {
 .input-column {
     display: flex;
     flex-flow: column;
+}
+
+.output-column {
+    padding: 11%;
 }
 
 ul {
