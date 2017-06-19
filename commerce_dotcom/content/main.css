@@ -15,8 +15,13 @@ main {
 }
 
 .quadrant {
+    border: 1px solid black;
     flex: 1;
     padding: 1em 10vw;
+}
+
+div .quadrant-row:last-child {
+    border: none;
 }
 
 .quadrant-row {
@@ -34,10 +39,20 @@ main {
     flex-flow: column;
 }
 
+.order-panel {
+    width: 100%;
+}
+
+.order-heading {
+    text-align: center;
+}
+
 .output-column {
     padding: 11%;
 }
 
 ul {
     list-style: none;
+    margin: 0;
+    padding: 0;
 }
