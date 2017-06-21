@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nancy.Owin;
 
-namespace again
+namespace commerce_dotcom
 {
     public class Startup
     {
