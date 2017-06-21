@@ -2,6 +2,6 @@
 {
     public interface IProcess
     {
-        void Stop();
+        void End();
     }
 }

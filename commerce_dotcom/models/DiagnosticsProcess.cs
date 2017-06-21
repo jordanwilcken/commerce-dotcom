@@ -9,7 +9,7 @@ namespace commerce_dotcom.models
             TheProcess = process;
         }
 
-        public void Stop()
+        public void End()
         {
             TheProcess.Kill();
         }

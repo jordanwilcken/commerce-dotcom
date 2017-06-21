@@ -22,33 +22,30 @@ namespace commerce_dotcom
                 .UseApplicationInsights()
                 .Build();
 
-            var errors = StartMessageMoverProcess();
+            var messageMoverProcess = MakeMessageMoverProcess();
+            var errors = messageMoverProcess.Start();
             if (errors.Any())
                 Console.Error.WriteLine("Could not start the message mover process.");
 
             host.Run();
 
-            StopMessageMoverProcess();
+            EndMessageMoverProcess();
         }
 
         private static MessageMoverProcess _messageMoverProcess;
 
-        private static void StopMessageMoverProcess()
+        private static void EndMessageMoverProcess()
         {
             _messageMoverProcess.Stop();
         }
 
-        private static string[] StartMessageMoverProcess()
-        {
-            _messageMoverProcess = new MessageMoverProcess(
+        private static MessageMoverProcess MakeMessageMoverProcess() =>
+            new MessageMoverProcess(
                 () =>
                     new DiagnosticsProcess(
                         Process.Start(
                             new ProcessStartInfo(
                                 "CommerceMessagePipe.exe",
                                 "socketPort=7777"))));
-
-            return _messageMoverProcess.Start();
-        }
     }
 }
