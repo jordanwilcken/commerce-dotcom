@@ -10,20 +10,40 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "commerce_dotcom", "commerce
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommerceMessagePipe", "CommerceMessagePipe\CommerceMessagePipe.csproj", "{89A0057D-2ADE-467B-9D43-22F4E569630C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "websocket-sharp", "websocket-sharp\websocket-sharp.csproj", "{B357BAC7-529E-4D81-A0D2-71041B19C8DE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug_Ubuntu|Any CPU = Debug_Ubuntu|Any CPU
 		Debug|Any CPU = Debug|Any CPU
+		Release_Ubuntu|Any CPU = Release_Ubuntu|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C2FD755F-4E8C-4CE8-9197-F17CA374677C}.Debug_Ubuntu|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2FD755F-4E8C-4CE8-9197-F17CA374677C}.Debug_Ubuntu|Any CPU.Build.0 = Debug|Any CPU
 		{C2FD755F-4E8C-4CE8-9197-F17CA374677C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C2FD755F-4E8C-4CE8-9197-F17CA374677C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2FD755F-4E8C-4CE8-9197-F17CA374677C}.Release_Ubuntu|Any CPU.ActiveCfg = Release|Any CPU
+		{C2FD755F-4E8C-4CE8-9197-F17CA374677C}.Release_Ubuntu|Any CPU.Build.0 = Release|Any CPU
 		{C2FD755F-4E8C-4CE8-9197-F17CA374677C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C2FD755F-4E8C-4CE8-9197-F17CA374677C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89A0057D-2ADE-467B-9D43-22F4E569630C}.Debug_Ubuntu|Any CPU.ActiveCfg = Debug|Any CPU
+		{89A0057D-2ADE-467B-9D43-22F4E569630C}.Debug_Ubuntu|Any CPU.Build.0 = Debug|Any CPU
 		{89A0057D-2ADE-467B-9D43-22F4E569630C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{89A0057D-2ADE-467B-9D43-22F4E569630C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89A0057D-2ADE-467B-9D43-22F4E569630C}.Release_Ubuntu|Any CPU.ActiveCfg = Release|Any CPU
+		{89A0057D-2ADE-467B-9D43-22F4E569630C}.Release_Ubuntu|Any CPU.Build.0 = Release|Any CPU
 		{89A0057D-2ADE-467B-9D43-22F4E569630C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{89A0057D-2ADE-467B-9D43-22F4E569630C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B357BAC7-529E-4D81-A0D2-71041B19C8DE}.Debug_Ubuntu|Any CPU.ActiveCfg = Debug_Ubuntu|Any CPU
+		{B357BAC7-529E-4D81-A0D2-71041B19C8DE}.Debug_Ubuntu|Any CPU.Build.0 = Debug_Ubuntu|Any CPU
+		{B357BAC7-529E-4D81-A0D2-71041B19C8DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B357BAC7-529E-4D81-A0D2-71041B19C8DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B357BAC7-529E-4D81-A0D2-71041B19C8DE}.Release_Ubuntu|Any CPU.ActiveCfg = Release_Ubuntu|Any CPU
+		{B357BAC7-529E-4D81-A0D2-71041B19C8DE}.Release_Ubuntu|Any CPU.Build.0 = Release_Ubuntu|Any CPU
+		{B357BAC7-529E-4D81-A0D2-71041B19C8DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B357BAC7-529E-4D81-A0D2-71041B19C8DE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

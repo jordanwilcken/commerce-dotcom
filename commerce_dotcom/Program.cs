@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using commerce_dotcom.models;
+using Microsoft.AspNetCore.Hosting;
+using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Hosting;
-
-using commerce_dotcom.models;
-using System.Diagnostics;
 
 namespace commerce_dotcom
 {
