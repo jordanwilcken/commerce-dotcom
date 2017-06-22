@@ -30,12 +30,12 @@ namespace commerce_dotcom.models
         //Contract:
         //Calls Stop on the IProcess returned by StartProcess
         //Returns empty string array when everything works
-        public string[] Stop()
+        public string[] End()
         {
             var errors = new string[0];
             try
             {
-                DiagnosticsProcess.Stop();
+                DiagnosticsProcess.End();
             }
             catch
             {

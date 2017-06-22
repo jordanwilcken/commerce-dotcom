@@ -29,14 +29,7 @@ namespace commerce_dotcom
 
             host.Run();
 
-            EndMessageMoverProcess();
-        }
-
-        private static MessageMoverProcess _messageMoverProcess;
-
-        private static void EndMessageMoverProcess()
-        {
-            _messageMoverProcess.Stop();
+            messageMoverProcess.End();
         }
 
         private static MessageMoverProcess MakeMessageMoverProcess() =>
@@ -45,7 +38,7 @@ namespace commerce_dotcom
                     new DiagnosticsProcess(
                         Process.Start(
                             new ProcessStartInfo(
-                                "CommerceMessagePipe.exe",
+                                @"..\CommerceMessagePipe\bin\debug\CommerceMessagePipe.exe",
                                 "socketPort=7777"))));
     }
 }

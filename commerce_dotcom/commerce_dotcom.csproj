@@ -5,7 +5,9 @@
     <RuntimeIdentifier>win7-x86</RuntimeIdentifier>
     <PostBuildEvent>if not exist "Content" mkdir Content
 
-ECHO a | xcopy ..\..\..\..\Content Content /e</PostBuildEvent>
+ECHO a | xcopy ..\..\..\..\Content Content /e
+
+if exist "CommerceMessagePipe" rmdir CommerceMessagePipe /S /Q</PostBuildEvent>
   </PropertyGroup>
 
   <ItemGroup>

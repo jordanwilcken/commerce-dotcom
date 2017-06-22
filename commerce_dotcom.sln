@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 15.0.26228.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "commerce_dotcom", "commerce_dotcom\commerce_dotcom.csproj", "{C2FD755F-4E8C-4CE8-9197-F17CA374677C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{89A0057D-2ADE-467B-9D43-22F4E569630C} = {89A0057D-2ADE-467B-9D43-22F4E569630C}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommerceMessagePipe", "CommerceMessagePipe\CommerceMessagePipe.csproj", "{89A0057D-2ADE-467B-9D43-22F4E569630C}"
 EndProject
