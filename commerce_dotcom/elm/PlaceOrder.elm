@@ -11,6 +11,7 @@ import Json.Decode
 import Json.Encode
 
 import PlaceOrderModel
+import PlaceOrderView as View
 
 
 main =
@@ -36,53 +37,100 @@ init =
 type Msg
   = PostOrder
   | OrderPosted (Result Http.Error String)
+  | ChangeOrder ChangeOrderMsg
+  | SelectPaymentMethod String
+
+type ChangeOrderMsg
+  = AddLaptop
+  | AddBook
+  | AddLamp
 
 
 update : Msg -> PlaceOrderModel.Model -> (PlaceOrderModel.Model, Cmd Msg)
 update msg model =
   case msg of
+    ChangeOrder changeOrderMsg ->
+      let
+        changedPurchaseOrder = model.itemizedPurchaseOrder |> changeOrder changeOrderMsg
+        newModel = { model | itemizedPurchaseOrder = changedPurchaseOrder }
+      in
+        (newModel, Cmd.none)
+
+    SelectPaymentMethod selected ->
+      ({ model | paymentMethod = selected }, Cmd.none)
+
     PostOrder ->
       (model, postAnOrder model)
 
     OrderPosted (Ok responseMessage) ->
       init
 
-    OrderPosted (Err err)  ->
+    OrderPosted (Err err) ->
       (model, Cmd.none)
+
+
+changeOrder: ChangeOrderMsg -> PlaceOrderModel.ItemizedPurchaseOrder -> PlaceOrderModel.ItemizedPurchaseOrder
+changeOrder changeOrderMsg itemizedPurchaseOrder =
+  let
+    newItem =
+      changeOrderMsg |> toOrderItem
+  in
+    itemizedPurchaseOrder |> PlaceOrderModel.addOrderItem newItem
+    
+
+toOrderItem : ChangeOrderMsg -> PlaceOrderModel.OrderItem
+toOrderItem changeOrderMsg =
+  case changeOrderMsg of
+    AddLaptop ->
+      PlaceOrderModel.OrderItem "Laptop" 1 { price = 350.00, unit = "each" }
+
+    AddBook ->
+      PlaceOrderModel.OrderItem "Book" 1 { price = 19.99, unit = "each" }
+
+    AddLamp ->
+      PlaceOrderModel.OrderItem "Lamp" 1 { price = 39.00, unit = "each" }
       
-
- {--   NewGif (Ok newUrl) ->
-      (Model model.topic newUrl, Cmd.none)
-
-    NewGif (Err _) ->
-      (model, Cmd.none) --}
-
-
 
 -- VIEW
 
 
 view : PlaceOrderModel.Model -> Html Msg
 view model =
-  div [ class "quadrant-row" ]
-    [ text "this content provided by Elm"
-    , button [ class "submit-button", onClick PostOrder ] [ text "Place Order" ]
+  View.quadrantRow
+    [ h1 [] [ text "Place your order!" ]
+    , View.quadrantRow
+        [ View.inputColumn
+            [ button [ onClick (ChangeOrder AddLaptop) ] [ text "Add Laptop" ]
+            , button [ onClick (ChangeOrder AddBook) ] [ text "Add Book" ]
+            , button [ onClick (ChangeOrder AddLamp) ] [ text "Add Lamp" ]
+            ]
+        , View.outputColumn
+            [ View.itemizedPurchaseOrder model.itemizedPurchaseOrder
+            ]
+        ]
+    , View.quadrantRow
+        [ View.inputColumn
+            [ button [ onClick (SelectPaymentMethod "Paypal account") ] [ text "Paypal account" ]
+            , button [ onClick (SelectPaymentMethod "Visa ending in 0123") ] [ text "Visa ending in 0123" ]
+            ]
+        , View.outputColumn
+            [ View.explainCharges model
+            ]
+        ]
+    , View.quadrantRow
+        [ View.inputColumn
+            [
+            ]
+        , View.outputColumn
+            [
+            ]
+        ]
+    , View.quadrantRow
+        [ button [ onClick PostOrder ] [ text "Place Order" ]
+        ]
     ]
       {-- <h1>Place your order!</h1>
 
-        <div class="quadrant-row">
-          <div class="input-column">
-            <button>Add Laptop</button>
-            <button>Add Book</button>
-            <button>Add Lamp</button>
-          </div>
-          <div class="output-column">
-            <ul>
-              <li>Book x 2 @ $17 each</li>
-              <li>Laptop x 4 @ $350 each</li>
-            </ul>
-          </div>
-        </div>
         <div class="quadrant-row">
           <div class="input-column">
             <button>Paypal</button>
