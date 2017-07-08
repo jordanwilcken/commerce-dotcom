@@ -30,7 +30,6 @@ init =
   )
 
 
-
 -- UPDATE
 
 
@@ -39,6 +38,8 @@ type Msg
   | OrderPosted (Result Http.Error String)
   | ChangeOrder ChangeOrderMsg
   | SelectPaymentMethod String
+  | SelectShipTo String
+
 
 type ChangeOrderMsg
   = AddLaptop
@@ -58,6 +59,9 @@ update msg model =
 
     SelectPaymentMethod selected ->
       ({ model | paymentMethod = selected }, Cmd.none)
+
+    SelectShipTo selected ->
+      ({ model | shipTo = selected }, Cmd.none)
 
     PostOrder ->
       (model, postAnOrder model)
@@ -96,7 +100,7 @@ toOrderItem changeOrderMsg =
 
 view : PlaceOrderModel.Model -> Html Msg
 view model =
-  View.quadrantRow
+  div []
     [ h1 [] [ text "Place your order!" ]
     , View.quadrantRow
         [ View.inputColumn
@@ -119,40 +123,17 @@ view model =
         ]
     , View.quadrantRow
         [ View.inputColumn
-            [
+            [ button [ onClick (SelectShipTo "4059 Mt Lee Dr. Hollywood, CA 90068") ] [ text "4059 Mt Lee Dr. Hollywood, CA 90068" ]
+            , button [ onClick (SelectShipTo "2 Macquarie Street, Sydney") ] [ text "2 Macquarie Street, Sydney" ]
             ]
         , View.outputColumn
-            [
+            [ p [] [ text (if String.isEmpty model.shipTo then "" else ("Deliver to " ++ model.shipTo)) ]
             ]
         ]
     , View.quadrantRow
         [ button [ onClick PostOrder ] [ text "Place Order" ]
         ]
     ]
-      {-- <h1>Place your order!</h1>
-
-        <div class="quadrant-row">
-          <div class="input-column">
-            <button>Paypal</button>
-            <button>Visa ending in 0123</button>
-          </div>
-          <div class="output-column">
-            <p>$2000 will be charged to your Visa</p>
-          </div>
-        </div>
-        <div class="quadrant-row">
-          <div class="input-column">
-            <button>4059 Mt Lee Dr. Hollywood, CA 90068</button>
-            <button>2 Macquarie Street, Sydney</button>
-          </div>
-          <div class="output-column">
-            <p>Deliver to 2 Macquarie Street, Sydney</p>
-          </div>
-        </div>
-        <div class="quadrant-row">
-          <button class="submit-button">Place Order</button>
-        </div> --}
-
 
 
 -- SUBSCRIPTIONS
@@ -163,12 +144,13 @@ subscriptions model =
   Sub.none
 
 
-
 -- HTTP
+
 
 postAnOrder : PlaceOrderModel.Model -> Cmd Msg
 postAnOrder model =
   Http.send OrderPosted (Http.post "../orders" (model |> toRequestBody) decodeResponseMessage)
+
 
 toRequestBody : PlaceOrderModel.Model -> Http.Body
 toRequestBody model =
@@ -176,21 +158,7 @@ toRequestBody model =
   |> PlaceOrderModel.asJsonValue
   |> Http.jsonBody
 
+
 decodeResponseMessage : Json.Decode.Decoder String
 decodeResponseMessage =
   Json.Decode.field "message" Json.Decode.string
-  
-
-{-- getRandomGif : String -> Cmd Msg
-getRandomGif topic =
-  let
-    url =
-      "https://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag=" ++ topic
-  in
-    Http.send NewGif (Http.get url decodeGifUrl)
-
-
-decodeGifUrl : Decode.Decoder String
-decodeGifUrl =
-  Decode.at ["data", "image_url"] Decode.string
-  --}

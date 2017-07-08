@@ -9033,6 +9033,16 @@ var _elm_lang$http$Http$StringPart = F2(
 	});
 var _elm_lang$http$Http$stringPart = _elm_lang$http$Http$StringPart;
 
+var _user$project$PlaceOrderModel$calculateOrderTotal = function (purchaseOrder) {
+	return A3(
+		_elm_lang$core$List$foldl,
+		F2(
+			function (item, total) {
+				return total + (_elm_lang$core$Basics$toFloat(item.quantity) * item.unitPrice.price);
+			}),
+		0.0,
+		purchaseOrder);
+};
 var _user$project$PlaceOrderModel$encodeOrderItem = function (item) {
 	return _elm_lang$core$Json_Encode$object(
 		{
@@ -9065,6 +9075,36 @@ var _user$project$PlaceOrderModel$encodePurchaseOrder = function (purchaseOrder)
 	return _elm_lang$core$Json_Encode$list(
 		A2(_elm_lang$core$List$map, _user$project$PlaceOrderModel$encodeOrderItem, purchaseOrder));
 };
+var _user$project$PlaceOrderModel$increaseQuantityBy = F3(
+	function (amount, markedForChange, purchaseOrder) {
+		var changeQuantity = function (item) {
+			return markedForChange(item) ? _elm_lang$core$Native_Utils.update(
+				item,
+				{quantity: item.quantity + amount}) : item;
+		};
+		return A2(_elm_lang$core$List$map, changeQuantity, purchaseOrder);
+	});
+var _user$project$PlaceOrderModel$checkProductInOrder = F2(
+	function (purchaseOrder, orderItem) {
+		var descriptions = A2(
+			_elm_lang$core$List$map,
+			function (item) {
+				return item.description;
+			},
+			purchaseOrder);
+		return A2(_elm_lang$core$List$member, orderItem.description, descriptions);
+	});
+var _user$project$PlaceOrderModel$addOrderItem = F2(
+	function (newItem, purchaseOrder) {
+		var whereDescriptionMatches = function (item) {
+			return _elm_lang$core$Native_Utils.eq(item.description, newItem.description);
+		};
+		var productNotYetInOrder = !A2(_user$project$PlaceOrderModel$checkProductInOrder, purchaseOrder, newItem);
+		return productNotYetInOrder ? A2(
+			_elm_lang$core$List$append,
+			purchaseOrder,
+			_elm_lang$core$List$singleton(newItem)) : A3(_user$project$PlaceOrderModel$increaseQuantityBy, newItem.quantity, whereDescriptionMatches, purchaseOrder);
+	});
 var _user$project$PlaceOrderModel$asJsonValue = function (model) {
 	return _elm_lang$core$Json_Encode$object(
 		{
@@ -9098,6 +9138,109 @@ var _user$project$PlaceOrderModel$UnitPrice = F2(
 		return {price: a, unit: b};
 	});
 
+var _user$project$PlaceOrderView$explainCharges = function (model) {
+	var paymentMethodText = _elm_lang$core$String$isEmpty(model.paymentMethod) ? '' : A2(_elm_lang$core$Basics_ops['++'], ' will be charged to your ', model.paymentMethod);
+	var orderTotal = _user$project$PlaceOrderModel$calculateOrderTotal(model.itemizedPurchaseOrder);
+	var explanation = (_elm_lang$core$Native_Utils.cmp(orderTotal, 0.0) > 0) ? A2(
+		_elm_lang$core$Basics_ops['++'],
+		'$',
+		A2(
+			_elm_lang$core$Basics_ops['++'],
+			_elm_lang$core$Basics$toString(orderTotal),
+			paymentMethodText)) : '';
+	return A2(
+		_elm_lang$html$Html$p,
+		{ctor: '[]'},
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html$text(explanation),
+			_1: {ctor: '[]'}
+		});
+};
+var _user$project$PlaceOrderView$stringify = function (orderItem) {
+	var space = ' ';
+	var quantity = A2(
+		_elm_lang$core$Basics_ops['++'],
+		'x',
+		A2(
+			_elm_lang$core$Basics_ops['++'],
+			space,
+			_elm_lang$core$Basics$toString(orderItem.quantity)));
+	var unitPrice = A2(
+		_elm_lang$core$Basics_ops['++'],
+		'$',
+		A2(
+			_elm_lang$core$Basics_ops['++'],
+			_elm_lang$core$Basics$toString(orderItem.unitPrice.price),
+			A2(_elm_lang$core$Basics_ops['++'], space, orderItem.unitPrice.unit)));
+	return A2(
+		_elm_lang$core$Basics_ops['++'],
+		orderItem.description,
+		A2(
+			_elm_lang$core$Basics_ops['++'],
+			space,
+			A2(
+				_elm_lang$core$Basics_ops['++'],
+				quantity,
+				A2(
+					_elm_lang$core$Basics_ops['++'],
+					space,
+					A2(
+						_elm_lang$core$Basics_ops['++'],
+						'@',
+						A2(_elm_lang$core$Basics_ops['++'], space, unitPrice))))));
+};
+var _user$project$PlaceOrderView$itemizedPurchaseOrder = function (itemizedOrder) {
+	var makeLi = function (orderItem) {
+		return A2(
+			_elm_lang$html$Html$li,
+			{ctor: '[]'},
+			{
+				ctor: '::',
+				_0: _elm_lang$html$Html$text(
+					_user$project$PlaceOrderView$stringify(orderItem)),
+				_1: {ctor: '[]'}
+			});
+	};
+	var toLiElements = function (itemizedOrder) {
+		return A2(_elm_lang$core$List$map, makeLi, itemizedOrder);
+	};
+	return A2(
+		_elm_lang$html$Html$ul,
+		{ctor: '[]'},
+		toLiElements(itemizedOrder));
+};
+var _user$project$PlaceOrderView$outputColumn = function (children) {
+	return A2(
+		_elm_lang$html$Html$div,
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$class('output-column'),
+			_1: {ctor: '[]'}
+		},
+		children);
+};
+var _user$project$PlaceOrderView$inputColumn = function (children) {
+	return A2(
+		_elm_lang$html$Html$div,
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$class('input-column'),
+			_1: {ctor: '[]'}
+		},
+		children);
+};
+var _user$project$PlaceOrderView$quadrantRow = function (children) {
+	return A2(
+		_elm_lang$html$Html$div,
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$class('quadrant-row'),
+			_1: {ctor: '[]'}
+		},
+		children);
+};
+
 var _user$project$PlaceOrder$decodeResponseMessage = A2(_elm_lang$core$Json_Decode$field, 'message', _elm_lang$core$Json_Decode$string);
 var _user$project$PlaceOrder$toRequestBody = function (model) {
 	return _elm_lang$http$Http$jsonBody(
@@ -9106,6 +9249,34 @@ var _user$project$PlaceOrder$toRequestBody = function (model) {
 var _user$project$PlaceOrder$subscriptions = function (model) {
 	return _elm_lang$core$Platform_Sub$none;
 };
+var _user$project$PlaceOrder$toOrderItem = function (changeOrderMsg) {
+	var _p0 = changeOrderMsg;
+	switch (_p0.ctor) {
+		case 'AddLaptop':
+			return A3(
+				_user$project$PlaceOrderModel$OrderItem,
+				'Laptop',
+				1,
+				{price: 350.0, unit: 'each'});
+		case 'AddBook':
+			return A3(
+				_user$project$PlaceOrderModel$OrderItem,
+				'Book',
+				1,
+				{price: 19.99, unit: 'each'});
+		default:
+			return A3(
+				_user$project$PlaceOrderModel$OrderItem,
+				'Lamp',
+				1,
+				{price: 39.0, unit: 'each'});
+	}
+};
+var _user$project$PlaceOrder$changeOrder = F2(
+	function (changeOrderMsg, itemizedPurchaseOrder) {
+		var newItem = _user$project$PlaceOrder$toOrderItem(changeOrderMsg);
+		return A2(_user$project$PlaceOrderModel$addOrderItem, newItem, itemizedPurchaseOrder);
+	});
 var _user$project$PlaceOrder$init = {
 	ctor: '_Tuple2',
 	_0: A3(
@@ -9114,6 +9285,15 @@ var _user$project$PlaceOrder$init = {
 		'',
 		''),
 	_1: _elm_lang$core$Platform_Cmd$none
+};
+var _user$project$PlaceOrder$SelectShipTo = function (a) {
+	return {ctor: 'SelectShipTo', _0: a};
+};
+var _user$project$PlaceOrder$SelectPaymentMethod = function (a) {
+	return {ctor: 'SelectPaymentMethod', _0: a};
+};
+var _user$project$PlaceOrder$ChangeOrder = function (a) {
+	return {ctor: 'ChangeOrder', _0: a};
 };
 var _user$project$PlaceOrder$OrderPosted = function (a) {
 	return {ctor: 'OrderPosted', _0: a};
@@ -9130,52 +9310,259 @@ var _user$project$PlaceOrder$postAnOrder = function (model) {
 };
 var _user$project$PlaceOrder$update = F2(
 	function (msg, model) {
-		var _p0 = msg;
-		if (_p0.ctor === 'PostOrder') {
-			return {
-				ctor: '_Tuple2',
-				_0: model,
-				_1: _user$project$PlaceOrder$postAnOrder(model)
-			};
-		} else {
-			if (_p0._0.ctor === 'Ok') {
-				return _user$project$PlaceOrder$init;
-			} else {
-				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-			}
+		var _p1 = msg;
+		switch (_p1.ctor) {
+			case 'ChangeOrder':
+				var changedPurchaseOrder = A2(_user$project$PlaceOrder$changeOrder, _p1._0, model.itemizedPurchaseOrder);
+				var newModel = _elm_lang$core$Native_Utils.update(
+					model,
+					{itemizedPurchaseOrder: changedPurchaseOrder});
+				return {ctor: '_Tuple2', _0: newModel, _1: _elm_lang$core$Platform_Cmd$none};
+			case 'SelectPaymentMethod':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{paymentMethod: _p1._0}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'SelectShipTo':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{shipTo: _p1._0}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'PostOrder':
+				return {
+					ctor: '_Tuple2',
+					_0: model,
+					_1: _user$project$PlaceOrder$postAnOrder(model)
+				};
+			default:
+				if (_p1._0.ctor === 'Ok') {
+					return _user$project$PlaceOrder$init;
+				} else {
+					return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+				}
 		}
 	});
 var _user$project$PlaceOrder$PostOrder = {ctor: 'PostOrder'};
+var _user$project$PlaceOrder$AddLamp = {ctor: 'AddLamp'};
+var _user$project$PlaceOrder$AddBook = {ctor: 'AddBook'};
+var _user$project$PlaceOrder$AddLaptop = {ctor: 'AddLaptop'};
 var _user$project$PlaceOrder$view = function (model) {
 	return A2(
 		_elm_lang$html$Html$div,
+		{ctor: '[]'},
 		{
 			ctor: '::',
-			_0: _elm_lang$html$Html_Attributes$class('quadrant-row'),
-			_1: {ctor: '[]'}
-		},
-		{
-			ctor: '::',
-			_0: _elm_lang$html$Html$text('this content provided by Elm'),
+			_0: A2(
+				_elm_lang$html$Html$h1,
+				{ctor: '[]'},
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html$text('Place your order!'),
+					_1: {ctor: '[]'}
+				}),
 			_1: {
 				ctor: '::',
-				_0: A2(
-					_elm_lang$html$Html$button,
+				_0: _user$project$PlaceOrderView$quadrantRow(
 					{
 						ctor: '::',
-						_0: _elm_lang$html$Html_Attributes$class('submit-button'),
+						_0: _user$project$PlaceOrderView$inputColumn(
+							{
+								ctor: '::',
+								_0: A2(
+									_elm_lang$html$Html$button,
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html_Events$onClick(
+											_user$project$PlaceOrder$ChangeOrder(_user$project$PlaceOrder$AddLaptop)),
+										_1: {ctor: '[]'}
+									},
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html$text('Add Laptop'),
+										_1: {ctor: '[]'}
+									}),
+								_1: {
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$button,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Events$onClick(
+												_user$project$PlaceOrder$ChangeOrder(_user$project$PlaceOrder$AddBook)),
+											_1: {ctor: '[]'}
+										},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text('Add Book'),
+											_1: {ctor: '[]'}
+										}),
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$button,
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html_Events$onClick(
+													_user$project$PlaceOrder$ChangeOrder(_user$project$PlaceOrder$AddLamp)),
+												_1: {ctor: '[]'}
+											},
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html$text('Add Lamp'),
+												_1: {ctor: '[]'}
+											}),
+										_1: {ctor: '[]'}
+									}
+								}
+							}),
 						_1: {
 							ctor: '::',
-							_0: _elm_lang$html$Html_Events$onClick(_user$project$PlaceOrder$PostOrder),
+							_0: _user$project$PlaceOrderView$outputColumn(
+								{
+									ctor: '::',
+									_0: _user$project$PlaceOrderView$itemizedPurchaseOrder(model.itemizedPurchaseOrder),
+									_1: {ctor: '[]'}
+								}),
 							_1: {ctor: '[]'}
 						}
-					},
-					{
-						ctor: '::',
-						_0: _elm_lang$html$Html$text('Place Order'),
-						_1: {ctor: '[]'}
 					}),
-				_1: {ctor: '[]'}
+				_1: {
+					ctor: '::',
+					_0: _user$project$PlaceOrderView$quadrantRow(
+						{
+							ctor: '::',
+							_0: _user$project$PlaceOrderView$inputColumn(
+								{
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$button,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Events$onClick(
+												_user$project$PlaceOrder$SelectPaymentMethod('Paypal account')),
+											_1: {ctor: '[]'}
+										},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text('Paypal account'),
+											_1: {ctor: '[]'}
+										}),
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$button,
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html_Events$onClick(
+													_user$project$PlaceOrder$SelectPaymentMethod('Visa ending in 0123')),
+												_1: {ctor: '[]'}
+											},
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html$text('Visa ending in 0123'),
+												_1: {ctor: '[]'}
+											}),
+										_1: {ctor: '[]'}
+									}
+								}),
+							_1: {
+								ctor: '::',
+								_0: _user$project$PlaceOrderView$outputColumn(
+									{
+										ctor: '::',
+										_0: _user$project$PlaceOrderView$explainCharges(model),
+										_1: {ctor: '[]'}
+									}),
+								_1: {ctor: '[]'}
+							}
+						}),
+					_1: {
+						ctor: '::',
+						_0: _user$project$PlaceOrderView$quadrantRow(
+							{
+								ctor: '::',
+								_0: _user$project$PlaceOrderView$inputColumn(
+									{
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$button,
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html_Events$onClick(
+													_user$project$PlaceOrder$SelectShipTo('4059 Mt Lee Dr. Hollywood, CA 90068')),
+												_1: {ctor: '[]'}
+											},
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html$text('4059 Mt Lee Dr. Hollywood, CA 90068'),
+												_1: {ctor: '[]'}
+											}),
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$button,
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html_Events$onClick(
+														_user$project$PlaceOrder$SelectShipTo('2 Macquarie Street, Sydney')),
+													_1: {ctor: '[]'}
+												},
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html$text('2 Macquarie Street, Sydney'),
+													_1: {ctor: '[]'}
+												}),
+											_1: {ctor: '[]'}
+										}
+									}),
+								_1: {
+									ctor: '::',
+									_0: _user$project$PlaceOrderView$outputColumn(
+										{
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$p,
+												{ctor: '[]'},
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html$text(
+														_elm_lang$core$String$isEmpty(model.shipTo) ? '' : A2(_elm_lang$core$Basics_ops['++'], 'Deliver to ', model.shipTo)),
+													_1: {ctor: '[]'}
+												}),
+											_1: {ctor: '[]'}
+										}),
+									_1: {ctor: '[]'}
+								}
+							}),
+						_1: {
+							ctor: '::',
+							_0: _user$project$PlaceOrderView$quadrantRow(
+								{
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$button,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Events$onClick(_user$project$PlaceOrder$PostOrder),
+											_1: {ctor: '[]'}
+										},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text('Place Order'),
+											_1: {ctor: '[]'}
+										}),
+									_1: {ctor: '[]'}
+								}),
+							_1: {ctor: '[]'}
+						}
+					}
+				}
 			}
 		});
 };
