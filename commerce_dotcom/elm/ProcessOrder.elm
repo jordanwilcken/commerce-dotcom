@@ -28,7 +28,7 @@ init =
   (Model 0, Cmd.none)
 
 type Msg =
-  NewOrder String
+  OrderReceived String
 
 
 -- UPDATE
@@ -83,7 +83,7 @@ view model =
 
 subscriptions : model -> Sub Msg
 subscriptions model =
-  WebSocket.listen "ws://localhost:7777/processing" NewOrder
+  WebSocket.listen "ws://localhost:7777/processing" OrderReceived
 
 
 

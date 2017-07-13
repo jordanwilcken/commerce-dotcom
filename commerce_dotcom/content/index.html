@@ -55,40 +55,14 @@
         </div>
       </div>
 
-      <div class="quadrant">
-        <h1>Commerce.com Financial Data</h1>
-        <div class="quadrant-row">
-          <div class="input-column">
-            <button>5%</button><button>10%</button><button>20%</button>
-          </div>
-          <div class="output-column">
-            We currently have a 5% profit margin on each item we sell.
-          </div>
-        </div>
-        <div class="quadrant-row">
-          <div class="panel panel-default order-panel">
-            <div class="panel-heading order-heading">June</div>
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>product</th>
-                  <th>units sold</th>
-                  <th>total profit</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>Books</td><td>1</td><td>$17</td></tr>
-                <tr><td>Lamps</td><td>27</td><td>$279</td></tr>
-                <tr><td>Laptops</td><td>4</td><td>$750</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+      <div id="financial" class="quadrant">
+        <!-- this content provided by Financial.elm-->
       </div>
 
     </div>
 
   </main>
+
   <script src="PlaceOrder.js"></script>
   <script>
     Elm.PlaceOrder.embed(document.getElementById("place-order"));
@@ -97,6 +71,11 @@
   <script src="ProcessOrder.js"></script>
   <script>
     Elm.ProcessOrder.embed(document.getElementById("process-order"));
+  </script>
+
+  <script src="Financial.js"></script>
+  <script>
+    Elm.Financial.embed(document.getElementById("financial"));
   </script>
 
   <script src="http://code.jquery.com/jquery-3.2.1.min.js"
