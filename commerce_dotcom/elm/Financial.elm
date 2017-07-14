@@ -12,6 +12,7 @@ import Json.Decode as Decode
 import Dict
 
 import PlaceOrderView as View
+import Pennies
 
 
 main =
@@ -27,9 +28,9 @@ init : (Model, Cmd Msg)
 init =
   let
     initialFinancialData =
-      [ FinancialData "Books" 0 0.0
-      , FinancialData "Lamps" 0 0.0
-      , FinancialData "Laptops" 0 0.0
+      [ FinancialData "Books" 0 Pennies.zeroPennies
+      , FinancialData "Lamps" 0 Pennies.zeroPennies
+      , FinancialData "Laptops" 0 Pennies.zeroPennies
       ]
 
     indexedData =
@@ -50,7 +51,7 @@ type alias Model =
 type alias FinancialData =
   { productDescription : String
   , unitsSold : Int
-  , totalProfit : Float 
+  , totalProfit : Pennies.Pennies 
   }
 
 
@@ -96,7 +97,10 @@ updateTheFinancials
           newValue =
             case maybeValue of
               Just indexedValue ->
-                FinancialData productDescription (indexedValue.unitsSold + data.unitsSold) (indexedValue.totalProfit + data.totalProfit)
+                FinancialData
+                  productDescription
+                  (indexedValue.unitsSold + data.unitsSold)
+                  (Pennies.addPennies indexedValue.totalProfit data.totalProfit)
 
               Nothing ->
                 data
