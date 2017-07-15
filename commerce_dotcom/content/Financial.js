@@ -9780,23 +9780,82 @@ var _user$project$PlaceOrderView$quadrantRow = function (children) {
 		children);
 };
 
-var _user$project$Financial$indexData = function (financialData) {
-	return _elm_lang$core$Dict$fromList(
-		A2(
-			_elm_lang$core$List$map,
-			function (item) {
-				return {ctor: '_Tuple2', _0: item.productDescription, _1: item};
-			},
-			financialData));
+var _user$project$FinancialModel$OrderItem = F3(
+	function (a, b, c) {
+		return {description: a, quantity: b, unitPrice: c};
+	});
+var _user$project$FinancialModel$decodeOrderItem = A4(
+	_elm_lang$core$Json_Decode$map3,
+	_user$project$FinancialModel$OrderItem,
+	A2(_elm_lang$core$Json_Decode$field, 'description', _elm_lang$core$Json_Decode$string),
+	A2(_elm_lang$core$Json_Decode$field, 'quantity', _elm_lang$core$Json_Decode$int),
+	A2(_elm_lang$core$Json_Decode$field, 'unitPrice', _elm_lang$core$Json_Decode$float));
+var _user$project$FinancialModel$decodePurchaseOrder = function (orderString) {
+	var purchaseOrderDecoder = _elm_lang$core$Json_Decode$list(_user$project$FinancialModel$decodeOrderItem);
+	return A2(
+		_elm_lang$core$Json_Decode$decodeString,
+		A2(_elm_lang$core$Json_Decode$field, 'itemizedPurchaseOrder', purchaseOrderDecoder),
+		orderString);
 };
+var _user$project$FinancialModel$Model = F2(
+	function (a, b) {
+		return {profitMargin: a, indexedFinancials: b};
+	});
+var _user$project$FinancialModel$FinancialData = F3(
+	function (a, b, c) {
+		return {productDescription: a, unitsSold: b, totalProfit: c};
+	});
+var _user$project$FinancialModel$sumTheNumbers = F3(
+	function (productDescription, data, indexedData) {
+		var maybeValue = A2(_elm_lang$core$Dict$get, productDescription, indexedData);
+		var newValue = function () {
+			var _p0 = maybeValue;
+			if (_p0.ctor === 'Just') {
+				var _p1 = _p0._0;
+				return A3(_user$project$FinancialModel$FinancialData, productDescription, _p1.unitsSold + data.unitsSold, _p1.totalProfit + data.totalProfit);
+			} else {
+				return data;
+			}
+		}();
+		return A3(_elm_lang$core$Dict$insert, productDescription, newValue, indexedData);
+	});
+var _user$project$FinancialModel$updateTheFinancials = F2(
+	function (priorData, newData) {
+		var combineFinancialData = _elm_lang$core$Dict$foldl(_user$project$FinancialModel$sumTheNumbers);
+		return A2(combineFinancialData, priorData, newData);
+	});
+
 var _user$project$Financial$toFinancialData = F2(
 	function (profitMarginPercent, orderItem) {
 		return {
 			productDescription: A2(_elm_lang$core$Basics_ops['++'], orderItem.description, 's'),
 			unitsSold: orderItem.quantity,
-			totalProfit: ((orderItem.unitPrice * _elm_lang$core$Basics$toFloat(profitMarginPercent)) / 100.0) * _elm_lang$core$Basics$toFloat(orderItem.quantity)
+			totalProfit: function () {
+				var unitPrice = _elm_lang$core$Basics$floor(orderItem.unitPrice * 100);
+				return _elm_lang$core$Basics$floor(
+					_elm_lang$core$Basics$toFloat((unitPrice * orderItem.quantity) * profitMarginPercent) / 100.0);
+			}()
 		};
 	});
+var _user$project$Financial$stringFormatCents = function (cents) {
+	return A2(
+		_elm_lang$core$String$cons,
+		_elm_lang$core$Native_Utils.chr('$'),
+		function (centsString) {
+			return A2(
+				_elm_lang$core$Basics_ops['++'],
+				A2(_elm_lang$core$String$dropRight, 2, centsString),
+				A2(
+					_elm_lang$core$Basics_ops['++'],
+					'.',
+					A2(_elm_lang$core$String$right, 2, centsString)));
+		}(
+			A3(
+				_elm_lang$core$String$padLeft,
+				3,
+				_elm_lang$core$Native_Utils.chr('0'),
+				_elm_lang$core$Basics$toString(cents))));
+};
 var _user$project$Financial$toFinancialRow = function (financialData) {
 	return A2(
 		_elm_lang$html$Html$tr,
@@ -9830,7 +9889,7 @@ var _user$project$Financial$toFinancialRow = function (financialData) {
 						{
 							ctor: '::',
 							_0: _elm_lang$html$Html$text(
-								_elm_lang$core$Basics$toString(financialData.totalProfit)),
+								_user$project$Financial$stringFormatCents(financialData.totalProfit)),
 							_1: {ctor: '[]'}
 						}),
 					_1: {ctor: '[]'}
@@ -9906,68 +9965,20 @@ var _user$project$Financial$viewFinancials = function (indexedFinancialData) {
 			}
 		});
 };
-var _user$project$Financial$Model = F2(
-	function (a, b) {
-		return {profitMargin: a, indexedFinancials: b};
-	});
-var _user$project$Financial$FinancialData = F3(
-	function (a, b, c) {
-		return {productDescription: a, unitsSold: b, totalProfit: c};
-	});
-var _user$project$Financial$init = function () {
-	var initialFinancialData = {
-		ctor: '::',
-		_0: A3(_user$project$Financial$FinancialData, 'Books', 0, 0.0),
-		_1: {
-			ctor: '::',
-			_0: A3(_user$project$Financial$FinancialData, 'Lamps', 0, 0.0),
-			_1: {
-				ctor: '::',
-				_0: A3(_user$project$Financial$FinancialData, 'Laptops', 0, 0.0),
-				_1: {ctor: '[]'}
-			}
-		}
-	};
-	var indexedData = _user$project$Financial$indexData(initialFinancialData);
-	return {
-		ctor: '_Tuple2',
-		_0: {profitMargin: 5, indexedFinancials: indexedData},
-		_1: _elm_lang$core$Platform_Cmd$none
-	};
-}();
-var _user$project$Financial$updateTheFinancials = F2(
-	function (priorData, newData) {
-		var sumTheNumbers = F3(
-			function (productDescription, data, indexedData) {
-				var maybeValue = A2(_elm_lang$core$Dict$get, productDescription, indexedData);
-				var newValue = function () {
-					var _p0 = maybeValue;
-					if (_p0.ctor === 'Just') {
-						var _p1 = _p0._0;
-						return A3(_user$project$Financial$FinancialData, productDescription, _p1.unitsSold + data.unitsSold, _p1.totalProfit + data.totalProfit);
-					} else {
-						return data;
-					}
-				}();
-				return A3(_elm_lang$core$Dict$insert, productDescription, newValue, indexedData);
-			});
-		var combineFinancialData = _elm_lang$core$Dict$foldl(sumTheNumbers);
-		return A2(combineFinancialData, priorData, newData);
-	});
 var _user$project$Financial$update = F2(
 	function (msg, model) {
-		var _p2 = msg;
-		switch (_p2.ctor) {
+		var _p0 = msg;
+		switch (_p0.ctor) {
 			case 'SetProfitMargin':
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{profitMargin: _p2._0}),
+						{profitMargin: _p0._0}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'NewFinancialData':
-				var updatedFinancials = A2(_user$project$Financial$updateTheFinancials, _p2._0, model.indexedFinancials);
+				var updatedFinancials = A2(_user$project$FinancialModel$updateTheFinancials, _p0._0, model.indexedFinancials);
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
@@ -9979,23 +9990,36 @@ var _user$project$Financial$update = F2(
 				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 		}
 	});
-var _user$project$Financial$OrderItem = F3(
-	function (a, b, c) {
-		return {description: a, quantity: b, unitPrice: c};
-	});
-var _user$project$Financial$decodeOrderItem = A4(
-	_elm_lang$core$Json_Decode$map3,
-	_user$project$Financial$OrderItem,
-	A2(_elm_lang$core$Json_Decode$field, 'description', _elm_lang$core$Json_Decode$string),
-	A2(_elm_lang$core$Json_Decode$field, 'quantity', _elm_lang$core$Json_Decode$int),
-	A2(_elm_lang$core$Json_Decode$field, 'unitPrice', _elm_lang$core$Json_Decode$float));
-var _user$project$Financial$decodePurchaseOrder = _elm_lang$core$Json_Decode$list(_user$project$Financial$decodeOrderItem);
-var _user$project$Financial$toItemizedOrder = function (orderString) {
-	return A2(
-		_elm_lang$core$Json_Decode$decodeString,
-		A2(_elm_lang$core$Json_Decode$field, 'itemizedPurchaseOrder', _user$project$Financial$decodePurchaseOrder),
-		orderString);
+var _user$project$Financial$indexData = function (financialData) {
+	return _elm_lang$core$Dict$fromList(
+		A2(
+			_elm_lang$core$List$map,
+			function (item) {
+				return {ctor: '_Tuple2', _0: item.productDescription, _1: item};
+			},
+			financialData));
 };
+var _user$project$Financial$init = function () {
+	var initialFinancialData = {
+		ctor: '::',
+		_0: A3(_user$project$FinancialModel$FinancialData, 'Books', 0, 0),
+		_1: {
+			ctor: '::',
+			_0: A3(_user$project$FinancialModel$FinancialData, 'Lamps', 0, 0),
+			_1: {
+				ctor: '::',
+				_0: A3(_user$project$FinancialModel$FinancialData, 'Laptops', 0, 0),
+				_1: {ctor: '[]'}
+			}
+		}
+	};
+	var indexedData = _user$project$Financial$indexData(initialFinancialData);
+	return {
+		ctor: '_Tuple2',
+		_0: {profitMargin: 5, indexedFinancials: indexedData},
+		_1: _elm_lang$core$Platform_Cmd$none
+	};
+}();
 var _user$project$Financial$InvalidFinancialData = function (a) {
 	return {ctor: 'InvalidFinancialData', _0: a};
 };
@@ -10013,11 +10037,11 @@ var _user$project$Financial$toFinancialDataMsg = F2(
 	});
 var _user$project$Financial$subscriptions = function (model) {
 	var rawDataToMessage = function (rawData) {
-		var _p3 = _user$project$Financial$toItemizedOrder(rawData);
-		if (_p3.ctor === 'Err') {
-			return A3(_elm_lang$core$Debug$log, _p3._0, _user$project$Financial$InvalidFinancialData, rawData);
+		var _p1 = _user$project$FinancialModel$decodePurchaseOrder(rawData);
+		if (_p1.ctor === 'Err') {
+			return A3(_elm_lang$core$Debug$log, _p1._0, _user$project$Financial$InvalidFinancialData, rawData);
 		} else {
-			return A2(_user$project$Financial$toFinancialDataMsg, model.profitMargin, _p3._0);
+			return A2(_user$project$Financial$toFinancialDataMsg, model.profitMargin, _p1._0);
 		}
 	};
 	return A2(_elm_lang$websocket$WebSocket$listen, 'ws://localhost:7777/processing', rawDataToMessage);

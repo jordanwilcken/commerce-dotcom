@@ -1,8 +1,5 @@
 module Financial exposing (main)
 
--- Read more about this program in the official Elm guide:
--- https://guide.elm-lang.org/architecture/effects/http.html
-
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -12,25 +9,21 @@ import Json.Decode as Decode
 import Dict
 
 import PlaceOrderView as View
-import Pennies
+import FinancialModel
 
 
 main =
   Html.program
-    { init = init
-    , view = view
-    , update = update
-    , subscriptions = subscriptions
-    }
+    { init = init, view = view, update = update, subscriptions = subscriptions }
 
 
 init : (Model, Cmd Msg)
 init =
   let
     initialFinancialData =
-      [ FinancialData "Books" 0 Pennies.zeroPennies
-      , FinancialData "Lamps" 0 Pennies.zeroPennies
-      , FinancialData "Laptops" 0 Pennies.zeroPennies
+      [ FinancialModel.FinancialData "Books" 0 0
+      , FinancialModel.FinancialData "Lamps" 0 0
+      , FinancialModel.FinancialData "Laptops" 0 0
       ]
 
     indexedData =
@@ -39,20 +32,17 @@ init =
     ({ profitMargin = 5, indexedFinancials = indexedData }, Cmd.none)
 
 
+indexData : List FinancialModel.FinancialData -> Dict.Dict String FinancialModel.FinancialData
+indexData financialData =
+  financialData
+    |> List.map (\item -> (item.productDescription, item))
+    |> Dict.fromList
+
+
 -- THE MODEL
 
 
-type alias Model =
-  { profitMargin : Int
-  , indexedFinancials : Dict.Dict String FinancialData
-  }
-
-
-type alias FinancialData =
-  { productDescription : String
-  , unitsSold : Int
-  , totalProfit : Pennies.Pennies 
-  }
+type alias Model = FinancialModel.Model
 
 
 -- UPDATE
@@ -60,7 +50,7 @@ type alias FinancialData =
 
 type Msg
   = SetProfitMargin Int
-  | NewFinancialData (Dict.Dict String FinancialData)
+  | NewFinancialData (Dict.Dict String FinancialModel.FinancialData)
   | InvalidFinancialData String
 
 
@@ -72,46 +62,14 @@ update msg model =
 
     NewFinancialData financialData ->
       let
-        updatedFinancials = model.indexedFinancials |> updateTheFinancials financialData
+        updatedFinancials =
+          model.indexedFinancials |> FinancialModel.updateTheFinancials financialData
       in
         ({ model | indexedFinancials = updatedFinancials }, Cmd.none)
 
     InvalidFinancialData rawData ->
       (model, Cmd.none)
 
-
-updateTheFinancials
-  : Dict.Dict String FinancialData
-  -> Dict.Dict String FinancialData
-  -> Dict.Dict String FinancialData
-updateTheFinancials
-  priorData
-  newData =
-    let
-      sumTheNumbers : String -> FinancialData -> Dict.Dict String FinancialData -> Dict.Dict String FinancialData
-      sumTheNumbers productDescription data indexedData =
-        let
-          maybeValue =
-            indexedData |> Dict.get productDescription
-
-          newValue =
-            case maybeValue of
-              Just indexedValue ->
-                FinancialData
-                  productDescription
-                  (indexedValue.unitsSold + data.unitsSold)
-                  (Pennies.addPennies indexedValue.totalProfit data.totalProfit)
-
-              Nothing ->
-                data
-        in
-          indexedData |> Dict.insert productDescription newValue
-
-      combineFinancialData =
-        Dict.foldl sumTheNumbers
-    in
-      combineFinancialData priorData newData
-  
 
 -- VIEW
 
@@ -140,7 +98,7 @@ view model =
     ]
 
 
-viewFinancials : Dict.Dict String FinancialData -> Html msg
+viewFinancials : Dict.Dict String FinancialModel.FinancialData -> Html msg
 viewFinancials indexedFinancialData =
   let
     rows =
@@ -160,13 +118,24 @@ viewFinancials indexedFinancialData =
       ]
 
 
-toFinancialRow : FinancialData -> Html msg
+toFinancialRow : FinancialModel.FinancialData -> Html msg
 toFinancialRow financialData =
   Html.tr []
     [ td [] [ Html.text financialData.productDescription ]
     , td [] [ Html.text (financialData.unitsSold |> toString) ]
-    , td [] [ Html.text (financialData.totalProfit |> toString) ]
+    , td [] [ Html.text (financialData.totalProfit |> stringFormatCents) ]
     ]
+
+
+stringFormatCents : Int -> String
+stringFormatCents cents =
+  cents
+    |> toString
+    |> String.padLeft 3 '0'
+    |> (\centsString ->
+          (String.dropRight 2 centsString) ++ "." ++ (String.right 2 centsString)
+        )
+    |> String.cons '$'
 
 
 -- SUBSCRIPTIONS
@@ -177,7 +146,7 @@ subscriptions model =
   let
     rawDataToMessage : String -> Msg
     rawDataToMessage rawData =
-      case rawData |> toItemizedOrder of
+      case rawData |> FinancialModel.decodePurchaseOrder of
         Err decodeError ->
           Debug.log decodeError
           InvalidFinancialData rawData
@@ -188,33 +157,7 @@ subscriptions model =
     WebSocket.listen "ws://localhost:7777/processing" rawDataToMessage
 
 
--- OTHER FUNCTIONS
-
-
-type alias ItemizedPurchaseOrder = List OrderItem
-
-type alias OrderItem = { description: String, quantity: Int, unitPrice: Float }
-
-
-toItemizedOrder : String -> Result String ItemizedPurchaseOrder
-toItemizedOrder orderString =
-  Decode.decodeString (Decode.field "itemizedPurchaseOrder" decodePurchaseOrder) orderString
-
-
-decodePurchaseOrder : Decode.Decoder ItemizedPurchaseOrder
-decodePurchaseOrder =
-  Decode.list decodeOrderItem
-
-
-decodeOrderItem : Decode.Decoder OrderItem
-decodeOrderItem =
-  Decode.map3 OrderItem
-    (Decode.field "description" Decode.string)
-    (Decode.field "quantity" Decode.int)
-    (Decode.field "unitPrice" Decode.float)
-
-
-toFinancialDataMsg : Int -> ItemizedPurchaseOrder -> Msg
+toFinancialDataMsg : Int -> FinancialModel.ItemizedPurchaseOrder -> Msg
 toFinancialDataMsg profitMargin itemizedOrder =
   let
     indexedData =
@@ -225,19 +168,14 @@ toFinancialDataMsg profitMargin itemizedOrder =
     NewFinancialData indexedData
 
 
-toFinancialData : Int -> OrderItem -> FinancialData
+toFinancialData : Int -> FinancialModel.OrderItem -> FinancialModel.FinancialData
 toFinancialData profitMarginPercent orderItem =
   { productDescription = orderItem.description ++ "s"
   , unitsSold = orderItem.quantity
-  , totalProfit
-      = orderItem.unitPrice
-      * (toFloat profitMarginPercent) / 100.0
-      * (toFloat orderItem.quantity)
+  , totalProfit =
+      let
+        unitPrice =
+          orderItem.unitPrice * 100 |> floor
+      in
+        toFloat (unitPrice * orderItem.quantity * profitMarginPercent) / 100.0 |> floor
   }
-
-
-indexData : List FinancialData -> Dict.Dict String FinancialData
-indexData financialData =
-  financialData
-    |> List.map (\item -> (item.productDescription, item))
-    |> Dict.fromList
