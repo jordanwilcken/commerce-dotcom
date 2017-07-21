@@ -9572,48 +9572,478 @@ var _elm_lang$websocket$WebSocket$onSelfMsg = F3(
 	});
 _elm_lang$core$Native_Platform.effectManagers['WebSocket'] = {pkg: 'elm-lang/websocket', init: _elm_lang$websocket$WebSocket$init, onEffects: _elm_lang$websocket$WebSocket$onEffects, onSelfMsg: _elm_lang$websocket$WebSocket$onSelfMsg, tag: 'fx', cmdMap: _elm_lang$websocket$WebSocket$cmdMap, subMap: _elm_lang$websocket$WebSocket$subMap};
 
-var _user$project$ProcessOrder$view = function (model) {
+var _user$project$Processing_Order$decodeShipTo = function (data) {
 	return A2(
-		_elm_lang$html$Html$div,
+		_elm_lang$core$Json_Decode$decodeString,
+		A2(_elm_lang$core$Json_Decode$field, 'shipTo', _elm_lang$core$Json_Decode$string),
+		data);
+};
+var _user$project$Processing_Order$toStatus = function (countdown) {
+	return (_elm_lang$core$Native_Utils.cmp(countdown, 1) < 0) ? 'ready for shipping' : A2(
+		_elm_lang$core$Basics_ops['++'],
+		'ready for shipping in ',
+		A2(
+			_elm_lang$core$Basics_ops['++'],
+			_elm_lang$core$Basics$toString(countdown),
+			' seconds'));
+};
+var _user$project$Processing_Order$toMerchandise = function (orderItems) {
+	var stringFormatItem = function (item) {
+		var description = (_elm_lang$core$Native_Utils.cmp(item.quantity, 1) > 0) ? A2(_elm_lang$core$Basics_ops['++'], item.description, 's') : item.description;
+		return A2(
+			_elm_lang$core$Basics_ops['++'],
+			_elm_lang$core$Basics$toString(item.quantity),
+			A2(
+				_elm_lang$core$Basics_ops['++'],
+				' ',
+				A2(_elm_lang$core$Basics_ops['++'], description, '.')));
+	};
+	return A2(
+		_elm_lang$core$String$join,
+		'  ',
+		A2(_elm_lang$core$List$map, stringFormatItem, orderItems));
+};
+var _user$project$Processing_Order$Order = F5(
+	function (a, b, c, d, e) {
+		return {id: a, merchandise: b, countdown: c, status: d, shipTo: e};
+	});
+var _user$project$Processing_Order$OrderItem = F2(
+	function (a, b) {
+		return {quantity: a, description: b};
+	});
+var _user$project$Processing_Order$orderItemDecoder = function () {
+	var descriptionDecoder = A2(_elm_lang$core$Json_Decode$field, 'description', _elm_lang$core$Json_Decode$string);
+	var quantityDecoder = A2(_elm_lang$core$Json_Decode$field, 'quantity', _elm_lang$core$Json_Decode$int);
+	return A3(_elm_lang$core$Json_Decode$map2, _user$project$Processing_Order$OrderItem, quantityDecoder, descriptionDecoder);
+}();
+var _user$project$Processing_Order$decodeMerchandise = function (data) {
+	var purchaseOrderDecoder = A2(
+		_elm_lang$core$Json_Decode$field,
+		'itemizedPurchaseOrder',
+		_elm_lang$core$Json_Decode$list(_user$project$Processing_Order$orderItemDecoder));
+	var purchaseOrderResult = A2(_elm_lang$core$Json_Decode$decodeString, purchaseOrderDecoder, data);
+	return A2(_elm_lang$core$Result$map, _user$project$Processing_Order$toMerchandise, purchaseOrderResult);
+};
+var _user$project$Processing_Order$makeOrder = F3(
+	function (id, countdown, stringData) {
+		var shipToResult = _user$project$Processing_Order$decodeShipTo(stringData);
+		var merchandiseResult = _user$project$Processing_Order$decodeMerchandise(stringData);
+		var mapToOrder = F2(
+			function (merchandise, shipTo) {
+				return A5(
+					_user$project$Processing_Order$Order,
+					id,
+					merchandise,
+					countdown,
+					_user$project$Processing_Order$toStatus(countdown),
+					shipTo);
+			});
+		return A3(_elm_lang$core$Result$map2, mapToOrder, merchandiseResult, shipToResult);
+	});
+
+var _user$project$ProcessOrder$orderToRow = function (order) {
+	return A2(
+		_elm_lang$html$Html$tr,
+		{ctor: '[]'},
 		{
 			ctor: '::',
-			_0: _elm_lang$html$Html_Attributes$class('quadrant-row'),
+			_0: A2(
+				_elm_lang$html$Html$td,
+				{ctor: '[]'},
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html$text(order.id),
+					_1: {ctor: '[]'}
+				}),
+			_1: {
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$td,
+					{ctor: '[]'},
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html$text(order.merchandise),
+						_1: {ctor: '[]'}
+					}),
+				_1: {
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$td,
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$class('status-cell'),
+							_1: {ctor: '[]'}
+						},
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html$text(order.status),
+							_1: {ctor: '[]'}
+						}),
+					_1: {ctor: '[]'}
+				}
+			}
+		});
+};
+var _user$project$ProcessOrder$viewOrders = function (orders) {
+	return A2(
+		_elm_lang$html$Html$table,
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$class('table'),
 			_1: {ctor: '[]'}
 		},
 		{
 			ctor: '::',
-			_0: _elm_lang$html$Html$text(
-				A2(
-					_elm_lang$core$Basics_ops['++'],
-					_elm_lang$core$Basics$toString(model.processingCount),
-					' orders currently in process.')),
-			_1: {ctor: '[]'}
+			_0: A2(
+				_elm_lang$html$Html$thead,
+				{ctor: '[]'},
+				{
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$tr,
+						{ctor: '[]'},
+						{
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$th,
+								{ctor: '[]'},
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html$text('id'),
+									_1: {ctor: '[]'}
+								}),
+							_1: {
+								ctor: '::',
+								_0: A2(
+									_elm_lang$html$Html$th,
+									{ctor: '[]'},
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html$text('details'),
+										_1: {ctor: '[]'}
+									}),
+								_1: {
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$th,
+										{ctor: '[]'},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text('status'),
+											_1: {ctor: '[]'}
+										}),
+									_1: {ctor: '[]'}
+								}
+							}
+						}),
+					_1: {ctor: '[]'}
+				}),
+			_1: {
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$tbody,
+					{ctor: '[]'},
+					A2(_elm_lang$core$List$map, _user$project$ProcessOrder$orderToRow, orders)),
+				_1: {ctor: '[]'}
+			}
 		});
+};
+var _user$project$ProcessOrder$postOrders = function (ordersToShip) {
+	return _elm_lang$core$Platform_Cmd$none;
+};
+var _user$project$ProcessOrder$makeCommand = function (orders) {
+	var readyForShipping = A2(
+		_elm_lang$core$List$filter,
+		function (order) {
+			return _elm_lang$core$Native_Utils.eq(order.status, 'ready for shipping');
+		},
+		orders);
+	return _elm_lang$core$List$isEmpty(readyForShipping) ? _elm_lang$core$Platform_Cmd$none : _user$project$ProcessOrder$postOrders(readyForShipping);
+};
+var _user$project$ProcessOrder$updateStatuses = function (orders) {
+	return A2(
+		_elm_lang$core$List$map,
+		function (order) {
+			return _elm_lang$core$Native_Utils.update(
+				order,
+				{
+					status: _user$project$Processing_Order$toStatus(order.countdown)
+				});
+		},
+		orders);
+};
+var _user$project$ProcessOrder$updateCountdowns = function (orders) {
+	return A2(
+		_elm_lang$core$List$map,
+		function (order) {
+			return _elm_lang$core$Native_Utils.update(
+				order,
+				{countdown: order.countdown - 1});
+		},
+		orders);
 };
 var _user$project$ProcessOrder$update = F2(
 	function (msg, model) {
 		var _p0 = msg;
-		return {
-			ctor: '_Tuple2',
-			_0: _elm_lang$core$Native_Utils.update(
-				model,
-				{processingCount: model.processingCount + 1}),
-			_1: _elm_lang$core$Platform_Cmd$none
-		};
+		switch (_p0.ctor) {
+			case 'SetSecondsToProcess':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{secondsToProcess: _p0._0}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'OrderReceived':
+				var updatedModel = _elm_lang$core$Native_Utils.update(
+					model,
+					{
+						orders: A2(
+							_elm_lang$core$List$append,
+							model.orders,
+							{
+								ctor: '::',
+								_0: _p0._0,
+								_1: {ctor: '[]'}
+							}),
+						ordersReceivedCount: model.ordersReceivedCount + 1
+					});
+				return {ctor: '_Tuple2', _0: updatedModel, _1: _elm_lang$core$Platform_Cmd$none};
+			case 'UpdateCountdowns':
+				var updatedOrders = _user$project$ProcessOrder$updateStatuses(
+					_user$project$ProcessOrder$updateCountdowns(model.orders));
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{orders: updatedOrders}),
+					_1: _user$project$ProcessOrder$makeCommand(updatedOrders)
+				};
+			case 'PostOrders':
+				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+			case 'OrdersPosted':
+				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+			default:
+				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+		}
 	});
-var _user$project$ProcessOrder$Model = function (a) {
-	return {processingCount: a};
+var _user$project$ProcessOrder$init = function () {
+	var initialModel = {
+		secondsToProcess: 5,
+		orders: {ctor: '[]'},
+		ordersReceivedCount: 0
+	};
+	return {ctor: '_Tuple2', _0: initialModel, _1: _elm_lang$core$Platform_Cmd$none};
+}();
+var _user$project$ProcessOrder$Model = F3(
+	function (a, b, c) {
+		return {secondsToProcess: a, orders: b, ordersReceivedCount: c};
+	});
+var _user$project$ProcessOrder$Nevermind = {ctor: 'Nevermind'};
+var _user$project$ProcessOrder$OrdersPosted = function (a) {
+	return {ctor: 'OrdersPosted', _0: a};
 };
-var _user$project$ProcessOrder$init = {
-	ctor: '_Tuple2',
-	_0: _user$project$ProcessOrder$Model(0),
-	_1: _elm_lang$core$Platform_Cmd$none
+var _user$project$ProcessOrder$PostOrders = function (a) {
+	return {ctor: 'PostOrders', _0: a};
 };
-var _user$project$ProcessOrder$NewOrder = function (a) {
-	return {ctor: 'NewOrder', _0: a};
+var _user$project$ProcessOrder$UpdateCountdowns = {ctor: 'UpdateCountdowns'};
+var _user$project$ProcessOrder$OrderReceived = function (a) {
+	return {ctor: 'OrderReceived', _0: a};
+};
+var _user$project$ProcessOrder$makeOrderMessage = function (orderResult) {
+	var _p1 = orderResult;
+	if (_p1.ctor === 'Err') {
+		return A2(_elm_lang$core$Debug$log, _p1._0, _user$project$ProcessOrder$Nevermind);
+	} else {
+		return _user$project$ProcessOrder$OrderReceived(_p1._0);
+	}
 };
 var _user$project$ProcessOrder$subscriptions = function (model) {
-	return A2(_elm_lang$websocket$WebSocket$listen, 'ws://localhost:7777/processing', _user$project$ProcessOrder$NewOrder);
+	var id = _elm_lang$core$Basics$toString(model.ordersReceivedCount + 1);
+	var makeOrder = function (socketData) {
+		return A3(_user$project$Processing_Order$makeOrder, id, model.secondsToProcess, socketData);
+	};
+	var subscriptions = {
+		ctor: '::',
+		_0: A2(
+			_elm_lang$websocket$WebSocket$listen,
+			'ws://localhost:7777/processing',
+			function (_p2) {
+				return _user$project$ProcessOrder$makeOrderMessage(
+					makeOrder(_p2));
+			}),
+		_1: {
+			ctor: '::',
+			_0: A2(
+				_elm_lang$core$Time$every,
+				_elm_lang$core$Time$second,
+				function (time) {
+					return _user$project$ProcessOrder$UpdateCountdowns;
+				}),
+			_1: {ctor: '[]'}
+		}
+	};
+	return _elm_lang$core$Platform_Sub$batch(subscriptions);
+};
+var _user$project$ProcessOrder$SetSecondsToProcess = function (a) {
+	return {ctor: 'SetSecondsToProcess', _0: a};
+};
+var _user$project$ProcessOrder$view = function (model) {
+	return A2(
+		_elm_lang$html$Html$div,
+		{ctor: '[]'},
+		{
+			ctor: '::',
+			_0: A2(
+				_elm_lang$html$Html$h1,
+				{ctor: '[]'},
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html$text('Order Processing'),
+					_1: {ctor: '[]'}
+				}),
+			_1: {
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$div,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$class('quadrant-row'),
+						_1: {ctor: '[]'}
+					},
+					{
+						ctor: '::',
+						_0: A2(
+							_elm_lang$html$Html$div,
+							{
+								ctor: '::',
+								_0: _elm_lang$html$Html_Attributes$class('input-column'),
+								_1: {ctor: '[]'}
+							},
+							{
+								ctor: '::',
+								_0: A2(
+									_elm_lang$html$Html$button,
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html_Events$onClick(
+											_user$project$ProcessOrder$SetSecondsToProcess(5)),
+										_1: {ctor: '[]'}
+									},
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html$text('5 seconds'),
+										_1: {ctor: '[]'}
+									}),
+								_1: {
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$button,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Events$onClick(
+												_user$project$ProcessOrder$SetSecondsToProcess(10)),
+											_1: {ctor: '[]'}
+										},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text('10 seconds'),
+											_1: {ctor: '[]'}
+										}),
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$button,
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html_Events$onClick(
+													_user$project$ProcessOrder$SetSecondsToProcess(60)),
+												_1: {ctor: '[]'}
+											},
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html$text('1 minute'),
+												_1: {ctor: '[]'}
+											}),
+										_1: {ctor: '[]'}
+									}
+								}
+							}),
+						_1: {
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$div,
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html_Attributes$class('output-column'),
+									_1: {ctor: '[]'}
+								},
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html$text(
+										A2(
+											_elm_lang$core$Basics_ops['++'],
+											'It currently takes ',
+											A2(
+												_elm_lang$core$Basics_ops['++'],
+												_elm_lang$core$Basics$toString(model.secondsToProcess),
+												' seconds to process an order.'))),
+									_1: {ctor: '[]'}
+								}),
+							_1: {ctor: '[]'}
+						}
+					}),
+				_1: {
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$div,
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$class('quadrant-row'),
+							_1: {ctor: '[]'}
+						},
+						{
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$div,
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html_Attributes$class('panel panel-default order-panel'),
+									_1: {ctor: '[]'}
+								},
+								{
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$div,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$class('panel-heading order-heading'),
+											_1: {ctor: '[]'}
+										},
+										{
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$div,
+												{ctor: '[]'},
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html$text('In-Progress Orders'),
+													_1: {ctor: '[]'}
+												}),
+											_1: {ctor: '[]'}
+										}),
+									_1: {
+										ctor: '::',
+										_0: _user$project$ProcessOrder$viewOrders(model.orders),
+										_1: {ctor: '[]'}
+									}
+								}),
+							_1: {ctor: '[]'}
+						}),
+					_1: {ctor: '[]'}
+				}
+			}
+		});
 };
 var _user$project$ProcessOrder$main = _elm_lang$html$Html$program(
 	{init: _user$project$ProcessOrder$init, view: _user$project$ProcessOrder$view, update: _user$project$ProcessOrder$update, subscriptions: _user$project$ProcessOrder$subscriptions})();

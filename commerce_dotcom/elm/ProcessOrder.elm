@@ -1,91 +1,194 @@
 module ProcessOrder exposing (main)
 
--- Read more about this program in the official Elm guide:
--- https://guide.elm-lang.org/architecture/effects/http.html
-
-import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events exposing (..)
+import Html
+import Html.Attributes exposing (class)
+import Html.Events exposing (onClick)
 import Http
-import Json.Decode
-import Json.Encode
-
 import WebSocket
+import Time
 
-type alias Model = { processingCount: Int}
+import Processing.Order
+
 
 main =
   Html.program
-    { init = init
-    , view = view
-    , update = update
-    , subscriptions = subscriptions
-    }
+    { init = init, view = view, update = update, subscriptions = subscriptions }
 
 
 init : (Model, Cmd Msg)
 init =
-  (Model 0, Cmd.none)
+  let
+    initialModel = { secondsToProcess = 5, orders = [], ordersReceivedCount = 0 }
+  in
+    (initialModel, Cmd.none)
 
-type Msg =
-  OrderReceived String
+
+-- MODEL
+
+type alias Order = Processing.Order.Order
+
+
+type alias Model =
+  { secondsToProcess : Int
+  , orders : List Order
+  , ordersReceivedCount : Int
+  }
 
 
 -- UPDATE
 
 
+type Msg
+  = SetSecondsToProcess Int
+  | OrderReceived Order
+  | UpdateCountdowns
+  | PostOrders (List Processing.Order.Order)
+  | OrdersPosted (Result Http.Error String)
+  | Nevermind
+
+
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    NewOrder theString ->
-      ({ model | processingCount = model.processingCount + 1 }, Cmd.none)
+    SetSecondsToProcess seconds ->
+      ({ model | secondsToProcess = seconds }, Cmd.none)
+
+    OrderReceived received ->
+      let
+        updatedModel =
+          { model
+            | orders = List.append model.orders [ received ]
+            , ordersReceivedCount = model.ordersReceivedCount + 1
+          }
+      in
+        (updatedModel, Cmd.none)
+
+    UpdateCountdowns ->
+      let
+        updatedOrders = model.orders |> updateCountdowns |> updateStatuses
+      in
+        ({ model | orders = updatedOrders }, makeCommand updatedOrders)
+
+    PostOrders orders ->
+      (model, Cmd.none)
+
+    OrdersPosted result ->
+      (model, Cmd.none)
+
+    Nevermind -> (model, Cmd.none)
+
+
+updateCountdowns : List Processing.Order.Order -> List Processing.Order.Order
+updateCountdowns orders =
+  orders |> List.map (\order -> { order | countdown = order.countdown - 1 })
+
+
+updateStatuses : List Processing.Order.Order -> List Processing.Order.Order
+updateStatuses orders =
+  orders |> List.map (\order -> { order | status = order.countdown |> Processing.Order.toStatus})
+
+
+makeCommand : List Processing.Order.Order -> Cmd Msg
+makeCommand orders =
+  let
+    readyForShipping =
+      orders |> List.filter (\order -> order.status == "ready for shipping")
+  in
+    if List.isEmpty readyForShipping then
+      Cmd.none
+
+    else
+      postOrders readyForShipping
+
+
+postOrders : List Processing.Order.Order -> Cmd Msg
+postOrders ordersToShip =
+  Cmd.none
+--  Http.send OrdersPosted (Http.post "../shipped-orders" (ordersToShip |> toRequestBody) decodeResponseMessage)
+
 
 -- VIEW
 
 
-view : Model -> Html Msg
+view : Model -> Html.Html Msg
 view model =
-  div [ class "quadrant-row" ]
-    [ text ((toString model.processingCount) ++ " orders currently in process.")
+  Html.div []
+    [ Html.h1 [] [ Html.text "Order Processing" ]
+    , Html.div [ class "quadrant-row" ]
+        [ Html.div [ class "input-column" ]
+            [ Html.button [ onClick <| SetSecondsToProcess 5 ] [ Html.text "5 seconds" ]
+            , Html.button [ onClick <| SetSecondsToProcess 10 ] [ Html.text "10 seconds" ]
+            , Html.button [ onClick <| SetSecondsToProcess 60 ] [ Html.text "1 minute" ]
+            ]
+        , Html.div [ class "output-column" ]
+            [ Html.text
+                <| "It currently takes "
+                ++ (toString model.secondsToProcess)
+                ++ " seconds to process an order."
+            ]
+        ]
+    , Html.div [ class "quadrant-row" ]
+       [ Html.div [ class "panel panel-default order-panel" ]
+            [ Html.div [ class "panel-heading order-heading" ]
+                [ Html.div [] [ Html.text "In-Progress Orders" ] ]
+            , viewOrders model.orders
+            ]
+        ]
     ]
 
-    {-- 
-            <h1>Order Processing</h1>
-        <div class="quadrant-row">
-          <div class="input-column">
-            <button>5 seconds</button><button>10 seconds</button><button>1 minute</button>
-          </div>
-          <div class="output-column">
-            It currently takes 5 seconds to process an order.
-          </div>
-        </div>
-        <div class="quadrant-row">
-          <div class="panel panel-default order-panel">
-            <div class="panel-heading order-heading">In-Progress Orders</div>
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>id</th>
-                  <th>details</th>
-                  <th>status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>1</td><td>2 books, 2 lamps, 1 laptop</td><td>ready for shipping in 5 seconds</td></tr>
-                <tr><td>2</td><td>5 lamps</td><td>ready for shipping in 7 seconds</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        --}
+
+viewOrders : List Processing.Order.Order -> Html.Html msg
+viewOrders orders =
+  Html.table [ class "table" ]
+    [ Html.thead []
+        [ Html.tr []
+            [ Html.th [] [ Html.text "id" ]
+            , Html.th [] [ Html.text "details" ]
+            , Html.th [] [ Html.text "status" ]
+            ]
+        ]
+    , Html.tbody [] (orders |> List.map orderToRow)
+    ]
+
+
+orderToRow : Processing.Order.Order -> Html.Html msg
+orderToRow order =
+  Html.tr []
+    [ Html.td [] [ Html.text order.id ]
+    , Html.td [] [ Html.text order.merchandise ]
+    , Html.td [ class "status-cell" ] [ Html.text order.status ]
+    ]
+
+
 -- SUBSCRIPTIONS
 
 
-subscriptions : model -> Sub Msg
+subscriptions : Model -> Sub Msg
 subscriptions model =
-  WebSocket.listen "ws://localhost:7777/processing" OrderReceived
+  let
+    id =
+      toString (model.ordersReceivedCount + 1)
+
+    makeOrder : String -> Result String Order
+    makeOrder socketData =
+      Processing.Order.makeOrder id model.secondsToProcess socketData
+
+    subscriptions =
+      [ WebSocket.listen "ws://localhost:7777/processing" (makeOrder >> makeOrderMessage)
+      , Time.every Time.second (\time -> UpdateCountdowns)
+      ]
+  in
+    Sub.batch subscriptions
 
 
+makeOrderMessage : Result String Order -> Msg
+makeOrderMessage orderResult =
+  case orderResult of
+    Err error ->
+      Debug.log error
+      Nevermind
+
+    Ok order -> OrderReceived order
 
 -- HTTP
 {--

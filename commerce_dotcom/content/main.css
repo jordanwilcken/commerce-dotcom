@@ -30,6 +30,10 @@ div .quadrant-row:last-child {
     padding: 0.5em 0;
 }
 
+.status-cell {
+  min-width: 55%;
+}
+
 .submit-button {
     width: 100%;
 }
