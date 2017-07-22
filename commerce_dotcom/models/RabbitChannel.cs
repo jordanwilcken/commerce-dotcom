@@ -6,6 +6,7 @@ namespace commerce_dotcom.models
     public class RabbitChannel : IPublishToProcessingQueue, IDisposable
     {
         public const string ProcessingQueueName = "order_processing";
+        public const string ShippingQueueName = "shipping";
 
         private IModel BackingChannel { get; }
         private IBasicProperties ChannelProperties { get; set; }
@@ -16,13 +17,14 @@ namespace commerce_dotcom.models
             Configure =
                 () =>
                     {
+                        DeclareQueues();
                         ChannelProperties = BackingChannel.CreateBasicProperties();
                         ChannelProperties.Persistent = true;
                         Configure = () => { };
                     };
         }
 
-        public void DeclareProcessingQueue()
+        public void DeclareQueues()
         {
             BackingChannel.QueueDeclare(
                 queue: ProcessingQueueName,
@@ -30,13 +32,20 @@ namespace commerce_dotcom.models
                 exclusive: false,
                 autoDelete: false,
                 arguments: null);
+
+            BackingChannel.QueueDeclare(
+                queue: ShippingQueueName,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                arguments: null);
         }
 
-        public void BasicPublish(byte[] messageBody)
+        public void BasicPublish(string routingKey, byte[] messageBody)
         {
             BackingChannel.BasicPublish(
                 exchange: "",
-                routingKey: ProcessingQueueName,
+                routingKey: routingKey,
                 basicProperties: ChannelProperties,
                 body: messageBody);
         }

@@ -9572,6 +9572,31 @@ var _elm_lang$websocket$WebSocket$onSelfMsg = F3(
 	});
 _elm_lang$core$Native_Platform.effectManagers['WebSocket'] = {pkg: 'elm-lang/websocket', init: _elm_lang$websocket$WebSocket$init, onEffects: _elm_lang$websocket$WebSocket$onEffects, onSelfMsg: _elm_lang$websocket$WebSocket$onSelfMsg, tag: 'fx', cmdMap: _elm_lang$websocket$WebSocket$cmdMap, subMap: _elm_lang$websocket$WebSocket$subMap};
 
+var _user$project$Processing_Order$encodeOrder = function (order) {
+	return _elm_lang$core$Json_Encode$object(
+		{
+			ctor: '::',
+			_0: {
+				ctor: '_Tuple2',
+				_0: 'id',
+				_1: _elm_lang$core$Json_Encode$string(order.id)
+			},
+			_1: {
+				ctor: '::',
+				_0: {
+					ctor: '_Tuple2',
+					_0: 'shipTo',
+					_1: _elm_lang$core$Json_Encode$string(order.shipTo)
+				},
+				_1: {ctor: '[]'}
+			}
+		});
+};
+var _user$project$Processing_Order$ordersToHttpBody = function (orders) {
+	var encodedOrders = _elm_lang$core$Json_Encode$list(
+		A2(_elm_lang$core$List$map, _user$project$Processing_Order$encodeOrder, orders));
+	return _elm_lang$http$Http$jsonBody(encodedOrders);
+};
 var _user$project$Processing_Order$decodeShipTo = function (data) {
 	return A2(
 		_elm_lang$core$Json_Decode$decodeString,
@@ -9748,17 +9773,10 @@ var _user$project$ProcessOrder$viewOrders = function (orders) {
 			}
 		});
 };
-var _user$project$ProcessOrder$postOrders = function (ordersToShip) {
-	return _elm_lang$core$Platform_Cmd$none;
-};
-var _user$project$ProcessOrder$makeCommand = function (orders) {
-	var readyForShipping = A2(
-		_elm_lang$core$List$filter,
-		function (order) {
-			return _elm_lang$core$Native_Utils.eq(order.status, 'ready for shipping');
-		},
-		orders);
-	return _elm_lang$core$List$isEmpty(readyForShipping) ? _elm_lang$core$Platform_Cmd$none : _user$project$ProcessOrder$postOrders(readyForShipping);
+var _user$project$ProcessOrder$buildRequest = function (ordersToShip) {
+	var messageDecoder = A2(_elm_lang$core$Json_Decode$field, 'message', _elm_lang$core$Json_Decode$string);
+	var requestBody = _user$project$Processing_Order$ordersToHttpBody(ordersToShip);
+	return A3(_elm_lang$http$Http$post, '../shipped-orders', requestBody, messageDecoder);
 };
 var _user$project$ProcessOrder$updateStatuses = function (orders) {
 	return A2(
@@ -9782,16 +9800,61 @@ var _user$project$ProcessOrder$updateCountdowns = function (orders) {
 		},
 		orders);
 };
+var _user$project$ProcessOrder$init = function () {
+	var initialModel = {
+		secondsToProcess: 5,
+		orders: {ctor: '[]'},
+		ordersReceivedCount: 0
+	};
+	return {ctor: '_Tuple2', _0: initialModel, _1: _elm_lang$core$Platform_Cmd$none};
+}();
+var _user$project$ProcessOrder$Model = F3(
+	function (a, b, c) {
+		return {secondsToProcess: a, orders: b, ordersReceivedCount: c};
+	});
+var _user$project$ProcessOrder$Nevermind = {ctor: 'Nevermind'};
+var _user$project$ProcessOrder$OrdersShipped = function (a) {
+	return {ctor: 'OrdersShipped', _0: a};
+};
+var _user$project$ProcessOrder$makeShippingCommand = function (ordersToShip) {
+	var convertToMsg = function (result) {
+		var _p0 = result;
+		if (_p0.ctor === 'Ok') {
+			return _user$project$ProcessOrder$OrdersShipped(
+				A2(
+					_elm_lang$core$List$map,
+					function (order) {
+						return order.id;
+					},
+					ordersToShip));
+		} else {
+			return _user$project$ProcessOrder$Nevermind;
+		}
+	};
+	return A2(
+		_elm_lang$http$Http$send,
+		convertToMsg,
+		_user$project$ProcessOrder$buildRequest(ordersToShip));
+};
+var _user$project$ProcessOrder$makeCommand = function (orders) {
+	var readyForShipping = A2(
+		_elm_lang$core$List$filter,
+		function (order) {
+			return _elm_lang$core$Native_Utils.eq(order.status, 'ready for shipping');
+		},
+		orders);
+	return _elm_lang$core$List$isEmpty(readyForShipping) ? _elm_lang$core$Platform_Cmd$none : _user$project$ProcessOrder$makeShippingCommand(readyForShipping);
+};
 var _user$project$ProcessOrder$update = F2(
 	function (msg, model) {
-		var _p0 = msg;
-		switch (_p0.ctor) {
+		var _p1 = msg;
+		switch (_p1.ctor) {
 			case 'SetSecondsToProcess':
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{secondsToProcess: _p0._0}),
+						{secondsToProcess: _p1._0}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'OrderReceived':
@@ -9803,7 +9866,7 @@ var _user$project$ProcessOrder$update = F2(
 							model.orders,
 							{
 								ctor: '::',
-								_0: _p0._0,
+								_0: _p1._0,
 								_1: {ctor: '[]'}
 							}),
 						ordersReceivedCount: model.ordersReceivedCount + 1
@@ -9819,43 +9882,30 @@ var _user$project$ProcessOrder$update = F2(
 						{orders: updatedOrders}),
 					_1: _user$project$ProcessOrder$makeCommand(updatedOrders)
 				};
-			case 'PostOrders':
-				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-			case 'OrdersPosted':
-				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+			case 'OrdersShipped':
+				var notShipped = function (order) {
+					return !A2(_elm_lang$core$List$member, order.id, _p1._0);
+				};
+				var updatedModel = _elm_lang$core$Native_Utils.update(
+					model,
+					{
+						orders: A2(_elm_lang$core$List$filter, notShipped, model.orders)
+					});
+				return {ctor: '_Tuple2', _0: updatedModel, _1: _elm_lang$core$Platform_Cmd$none};
 			default:
 				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 		}
 	});
-var _user$project$ProcessOrder$init = function () {
-	var initialModel = {
-		secondsToProcess: 5,
-		orders: {ctor: '[]'},
-		ordersReceivedCount: 0
-	};
-	return {ctor: '_Tuple2', _0: initialModel, _1: _elm_lang$core$Platform_Cmd$none};
-}();
-var _user$project$ProcessOrder$Model = F3(
-	function (a, b, c) {
-		return {secondsToProcess: a, orders: b, ordersReceivedCount: c};
-	});
-var _user$project$ProcessOrder$Nevermind = {ctor: 'Nevermind'};
-var _user$project$ProcessOrder$OrdersPosted = function (a) {
-	return {ctor: 'OrdersPosted', _0: a};
-};
-var _user$project$ProcessOrder$PostOrders = function (a) {
-	return {ctor: 'PostOrders', _0: a};
-};
 var _user$project$ProcessOrder$UpdateCountdowns = {ctor: 'UpdateCountdowns'};
 var _user$project$ProcessOrder$OrderReceived = function (a) {
 	return {ctor: 'OrderReceived', _0: a};
 };
 var _user$project$ProcessOrder$makeOrderMessage = function (orderResult) {
-	var _p1 = orderResult;
-	if (_p1.ctor === 'Err') {
-		return A2(_elm_lang$core$Debug$log, _p1._0, _user$project$ProcessOrder$Nevermind);
+	var _p2 = orderResult;
+	if (_p2.ctor === 'Err') {
+		return A2(_elm_lang$core$Debug$log, _p2._0, _user$project$ProcessOrder$Nevermind);
 	} else {
-		return _user$project$ProcessOrder$OrderReceived(_p1._0);
+		return _user$project$ProcessOrder$OrderReceived(_p2._0);
 	}
 };
 var _user$project$ProcessOrder$subscriptions = function (model) {
@@ -9868,9 +9918,9 @@ var _user$project$ProcessOrder$subscriptions = function (model) {
 		_0: A2(
 			_elm_lang$websocket$WebSocket$listen,
 			'ws://localhost:7777/processing',
-			function (_p2) {
+			function (_p3) {
 				return _user$project$ProcessOrder$makeOrderMessage(
-					makeOrder(_p2));
+					makeOrder(_p3));
 			}),
 		_1: {
 			ctor: '::',

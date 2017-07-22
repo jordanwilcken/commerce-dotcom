@@ -16,7 +16,6 @@ namespace commerce_dotcom
             var connection = new ConnectionFactory { HostName = "localhost" }
               .CreateConnection();
             var rabbitChannel = new RabbitChannel(connection.CreateModel());
-            rabbitChannel.DeclareProcessingQueue();
             rabbitChannel.Configure();
 
             container.Register(connection);

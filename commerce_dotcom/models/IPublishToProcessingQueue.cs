@@ -2,6 +2,6 @@
 {
     public interface IPublishToProcessingQueue
     {
-        void BasicPublish(byte[] messageBody);
+        void BasicPublish(string routingKey, byte[] messageBody);
     }
 }

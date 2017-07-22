@@ -4,6 +4,7 @@ import Html
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Http
+import Json.Decode as Decode
 import WebSocket
 import Time
 
@@ -42,8 +43,7 @@ type Msg
   = SetSecondsToProcess Int
   | OrderReceived Order
   | UpdateCountdowns
-  | PostOrders (List Processing.Order.Order)
-  | OrdersPosted (Result Http.Error String)
+  | OrdersShipped (List String)
   | Nevermind
 
 
@@ -69,11 +69,15 @@ update msg model =
       in
         ({ model | orders = updatedOrders }, makeCommand updatedOrders)
 
-    PostOrders orders ->
-      (model, Cmd.none)
+    OrdersShipped shippedOrders ->
+      let
+        notShipped order =
+          not (List.member order.id shippedOrders)
 
-    OrdersPosted result ->
-      (model, Cmd.none)
+        updatedModel =
+          { model | orders = model.orders |> List.filter notShipped }
+      in
+        (updatedModel, Cmd.none)
 
     Nevermind -> (model, Cmd.none)
 
@@ -98,15 +102,36 @@ makeCommand orders =
       Cmd.none
 
     else
-      postOrders readyForShipping
+      makeShippingCommand readyForShipping
 
 
-postOrders : List Processing.Order.Order -> Cmd Msg
-postOrders ordersToShip =
-  Cmd.none
---  Http.send OrdersPosted (Http.post "../shipped-orders" (ordersToShip |> toRequestBody) decodeResponseMessage)
+makeShippingCommand : List Processing.Order.Order -> Cmd Msg
+makeShippingCommand ordersToShip =
+  let
+    convertToMsg : Result Http.Error String -> Msg
+    convertToMsg result =
+      case result of
+        Ok responseText ->
+          OrdersShipped (ordersToShip |> List.map (\order -> order.id))
+
+        Err err ->
+          Nevermind
+  in
+    Http.send convertToMsg (buildRequest ordersToShip)
 
 
+buildRequest : List Order -> Http.Request String
+buildRequest ordersToShip =
+  let
+    requestBody =
+      ordersToShip |> Processing.Order.ordersToHttpBody
+
+    messageDecoder =
+      Decode.field "message" Decode.string
+  in
+    Http.post "../shipped-orders" requestBody messageDecoder
+    
+    
 -- VIEW
 
 
@@ -189,34 +214,3 @@ makeOrderMessage orderResult =
       Nevermind
 
     Ok order -> OrderReceived order
-
--- HTTP
-{--
-postAnOrder : PlaceOrderModel.Model -> Cmd Msg
-postAnOrder model =
-  Http.send OrderPosted (Http.post "../orders" (model |> toRequestBody) decodeResponseMessage)
-
-toRequestBody : PlaceOrderModel.Model -> Http.Body
-toRequestBody model =
-  model
-  |> PlaceOrderModel.asJsonValue
-  |> Http.jsonBody
-
-decodeResponseMessage : Json.Decode.Decoder String
-decodeResponseMessage =
-  Json.Decode.field "message" Json.Decode.string
-  
-
-getRandomGif : String -> Cmd Msg
-getRandomGif topic =
-  let
-    url =
-      "https://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag=" ++ topic
-  in
-    Http.send NewGif (Http.get url decodeGifUrl)
-
-
-decodeGifUrl : Decode.Decoder String
-decodeGifUrl =
-  Decode.at ["data", "image_url"] Decode.string
-  --}

@@ -1,17 +1,27 @@
 ﻿using commerce_dotcom.models;
 using Nancy;
 using Nancy.Extensions;
-using System;
 using System.Text;
 
 namespace commerce_dotcom.nancy_modules
 {
-  public class OrdersModule : NancyModule
+    public class OrdersModule : NancyModule
   {
-    public OrdersModule(IPublishToProcessingQueue publisher)
+    public OrdersModule(IPublishToProcessingQueue processingPublisher)
     {
       Post["orders"] = _ => {
-        publisher.BasicPublish(Encoding.UTF8.GetBytes(Request.Body.AsString()));
+        processingPublisher.BasicPublish(
+          RabbitChannel.ProcessingQueueName,
+          Encoding.UTF8.GetBytes(Request.Body.AsString()));
+
+        return Response.AsJson(new { message = "success" });
+      };
+
+      Post["shipped-orders"] = _ => {
+        processingPublisher.BasicPublish(
+          RabbitChannel.ShippingQueueName,
+          Encoding.UTF8.GetBytes(Request.Body.AsString()));
+
         return Response.AsJson(new { message = "success" });
       };
     }

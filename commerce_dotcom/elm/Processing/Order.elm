@@ -1,6 +1,8 @@
-module Processing.Order exposing (Order, toStatus, makeOrder)
+module Processing.Order exposing (Order, toStatus, makeOrder, ordersToHttpBody)
 
+import Http
 import Json.Decode as Decode
+import Json.Encode as Encode
 
 
 type alias Order =
@@ -87,3 +89,20 @@ orderItemDecoder =
 decodeShipTo : String -> Result String String
 decodeShipTo data =
   Decode.decodeString (Decode.field "shipTo" Decode.string) data
+
+
+ordersToHttpBody : List Order -> Http.Body
+ordersToHttpBody orders =
+  let
+    encodedOrders =
+      Encode.list (orders |> List.map encodeOrder)
+  in
+    Http.jsonBody encodedOrders
+
+
+encodeOrder : Order -> Encode.Value
+encodeOrder order =
+  Encode.object
+    [ ("id", (Encode.string order.id))
+    , ("shipTo", (Encode.string order.shipTo))
+    ]

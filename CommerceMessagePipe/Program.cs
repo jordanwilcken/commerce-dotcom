@@ -60,19 +60,23 @@ namespace CommerceMessagePipe
             var errors = new List<string>();
 
             var consumerResult = MakeMessageConsumer("order_processing", rabbitChannel);
-            consumerResult.IfSuccess(() => AttachSocketServiceToMessageConsumer(consumerResult.Value, websocketServer));
+            consumerResult.IfSuccess(() => AttachSocketServiceToMessageConsumer(consumerResult.Value, "/processing", websocketServer));
+            consumerResult.IfFailure(() => errors.Add(consumerResult.Error));
+
+            consumerResult = MakeMessageConsumer("shipping", rabbitChannel);
+            consumerResult.IfSuccess(() => AttachSocketServiceToMessageConsumer(consumerResult.Value, "/shipping", websocketServer));
             consumerResult.IfFailure(() => errors.Add(consumerResult.Error));
 
             return errors.ToArray();
         }
 
-        private static void AttachSocketServiceToMessageConsumer(EventingBasicConsumer processingMessageConsumer, WebSocketServer websocketServer)
+        private static void AttachSocketServiceToMessageConsumer(EventingBasicConsumer processingMessageConsumer, string path, WebSocketServer websocketServer)
         {
             Action<SensibleSocketService> configureEvents =
                 processingSocket =>
                     ConfigureEvents(processingMessageConsumer, processingSocket);
 
-            websocketServer.AddWebSocketService("/processing", configureEvents);
+            websocketServer.AddWebSocketService(path, configureEvents);
         }
 
         private static void ConfigureEvents(EventingBasicConsumer processingMessageConsumer, SensibleSocketService orderProcessingSocket)
