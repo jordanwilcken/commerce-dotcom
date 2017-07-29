@@ -44,6 +44,7 @@ namespace CommerceMessagePipe
             using (IConnection rabbitConnection = MakeRabbitConnection())
             using (IModel rabbitChannel = rabbitConnection.CreateModel())
             {
+                ConfigureRabbit.Configure(rabbitChannel);
                 var errors = StartPipingMessages(rabbitChannel, server);
                 foreach (string error in errors)
                 {
@@ -70,24 +71,30 @@ namespace CommerceMessagePipe
             return errors.ToArray();
         }
 
-        private static void AttachSocketServiceToMessageConsumer(EventingBasicConsumer processingMessageConsumer, string path, WebSocketServer websocketServer)
+        private static void AttachSocketServiceToMessageConsumer
+            ( EventingBasicConsumer messageConsumer
+            , string path
+            , WebSocketServer websocketServer
+            )
         {
             Action<SensibleSocketService> configureEvents =
-                processingSocket =>
-                    ConfigureEvents(processingMessageConsumer, processingSocket);
+                socket =>
+                    ConfigureEvents(messageConsumer, socket);
 
             websocketServer.AddWebSocketService(path, configureEvents);
         }
 
-        private static void ConfigureEvents(EventingBasicConsumer processingMessageConsumer, SensibleSocketService orderProcessingSocket)
+        private static void ConfigureEvents(EventingBasicConsumer messageConsumer, SensibleSocketService socket)
         {
             EventHandler<BasicDeliverEventArgs> onReceived =
                 (sender, eventArgs) =>
-                    orderProcessingSocket.SendData(Encoding.UTF8.GetString(eventArgs.Body));
+                    {
+                        socket.SendData(Encoding.UTF8.GetString(eventArgs.Body));
+                    };
 
-            processingMessageConsumer.Received += onReceived;
-            orderProcessingSocket.Closed +=
-                () => processingMessageConsumer.Received -= onReceived;
+            messageConsumer.Received += onReceived;
+            socket.Closed +=
+                () => messageConsumer.Received -= onReceived;
         }
 
         private static Result<EventingBasicConsumer> MakeMessageConsumer(string queueName, IModel rabbitChannel)
@@ -97,6 +104,7 @@ namespace CommerceMessagePipe
 
             try
             {
+                consumer.Received += (mysteryObject, eventArgs) => rabbitChannel.BasicAck(eventArgs.DeliveryTag, multiple: false);
                 rabbitChannel.BasicConsume(queue: queueName, noAck: false, consumer: consumer);
                 result = Result<EventingBasicConsumer>.OK(consumer);
             }

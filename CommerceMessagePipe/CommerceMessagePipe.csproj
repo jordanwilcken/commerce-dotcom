@@ -45,6 +45,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConfigureRabbit.cs" />
     <Compile Include="Result.cs" />
     <Compile Include="SensibleSocketService.cs" />
     <Compile Include="Program.cs" />

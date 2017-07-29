@@ -6,25 +6,31 @@ using System.Text;
 namespace commerce_dotcom.nancy_modules
 {
     public class OrdersModule : NancyModule
-  {
-    public OrdersModule(IPublishToProcessingQueue processingPublisher)
     {
-      Post["orders"] = _ => {
-        processingPublisher.BasicPublish(
-          RabbitChannel.ProcessingQueueName,
-          Encoding.UTF8.GetBytes(Request.Body.AsString()));
+        public OrdersModule(IPublishToProcessingQueue processingPublisher)
+        {
+            Post["orders"] = _ =>
+            {
+                string requestBody = Request.Body.AsString();
 
-        return Response.AsJson(new { message = "success" });
-      };
+                processingPublisher.BasicPublish(
+                  RabbitChannel.ProcessingQueueName,
+                  Encoding.UTF8.GetBytes(requestBody));
 
-      Post["shipped-orders"] = _ => {
-        processingPublisher.BasicPublish(
-          RabbitChannel.ShippingQueueName,
-          Encoding.UTF8.GetBytes(Request.Body.AsString()));
+                return Response.AsJson(new { message = "success" });
+            };
 
-        return Response.AsJson(new { message = "success" });
-      };
+            Post["shipped-orders"] = _ =>
+            {
+                string requestBody = Request.Body.AsString();
+
+                processingPublisher.BasicPublish(
+                  RabbitChannel.ShippingQueueName,
+                  Encoding.UTF8.GetBytes(requestBody));
+
+                return Response.AsJson(new { message = "success" });
+            };
+        }
+
     }
-      
-  }
 }

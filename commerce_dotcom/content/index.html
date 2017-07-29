@@ -25,34 +25,8 @@
     </div>
 
     <div class="main-row">
-      <div class="quadrant">
-        <h1>Order Delivery</h1>
-        <div class="quadrant-row">
-          <div class="input-column">
-            <button>5 seconds</button><button>10 seconds</button><button>1 minute</button>
-          </div>
-          <div class="output-column">
-            It currently takes 5 seconds to deliver an order.
-          </div>
-        </div>
-        <div class="quadrant-row">
-          <div class="panel panel-default order-panel">
-            <div class="panel-heading order-heading">In-Progress Orders</div>
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>id</th>
-                  <th>delivering to</th>
-                  <th>status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>1</td><td>4059 Mt Lee Dr. Hollywood, CA 90068</td><td>delivery in 5 seconds</td></tr>
-                <tr><td>2</td><td>2 Macquarie Street, Sydney</td><td>delivery in 7 seconds</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+      <div id="ship-order" class="quadrant">
+        <!-- this content provided by ShipOrder.elm-->
       </div>
 
       <div id="financial" class="quadrant">
@@ -76,6 +50,11 @@
   <script src="Financial.js"></script>
   <script>
     Elm.Financial.embed(document.getElementById("financial"));
+  </script>
+
+  <script src="ShipOrder.js"></script>
+  <script>
+    Elm.ShipOrder.embed(document.getElementById("ship-order"));
   </script>
 
   <script src="http://code.jquery.com/jquery-3.2.1.min.js"
