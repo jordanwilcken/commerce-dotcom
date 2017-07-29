@@ -1,4 +1,4 @@
-module Shipping.Order exposing (Order, updateOrders, decodeOrders)
+module Shipping.Order exposing (Order, updateOrders, decodeOrders, tidy)
 
 import Json.Decode as Decode
 
@@ -14,6 +14,22 @@ type alias Order =
 updateOrders : List Order -> List Order
 updateOrders orders =
   orders |> decrementCountdowns |> updateStatuses
+
+
+tidy : List Order -> List Order
+tidy orders =
+  let
+    delivered =
+      orders |> List.filter (\order -> order.deliveryCountdown <= 0)
+
+    deliveredCount = List.length delivered
+
+    toRemove =
+      List.take (deliveredCount - 5) delivered
+  in
+    Debug.log (toString (List.length toRemove))
+    orders |> List.filter (\order -> not (List.member order toRemove))
+
 
 decodeOrders : Int -> String -> Result String (List Order)
 decodeOrders deliveryCountdown stringData =
@@ -32,7 +48,15 @@ decodeOrders deliveryCountdown stringData =
 
 
 decrementCountdowns orders =
-  orders |> List.map (\order -> { order | deliveryCountdown = order.deliveryCountdown - 1})
+  let
+    updateCountdown currentCountdown =
+      if currentCountdown > 0 then
+        currentCountdown - 1
+
+      else
+        currentCountdown
+  in
+    orders |> List.map (\order -> { order | deliveryCountdown = (order.deliveryCountdown |> updateCountdown) })
 
 
 updateStatuses orders =

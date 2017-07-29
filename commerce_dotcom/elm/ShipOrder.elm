@@ -40,7 +40,7 @@ update msg model =
     UpdateCountdowns ->
       let
         updatedOrders =
-          tidy (Shipping.Order.updateOrders model.orders)
+          Shipping.Order.tidy (Shipping.Order.updateOrders model.orders)
       in
         ({ model | orders = updatedOrders }, Cmd.none)
 
@@ -48,12 +48,6 @@ update msg model =
       ({ model | secondsToDeliver = value }, Cmd.none)
 
     Nevermind -> (model, Cmd.none)
-
-
---TO DO: keep only 5 delivered orders around. That means remove from top
-tidy : List Order -> List Order
-tidy orders =
-  orders
 
 
 view : Model -> Html.Html Msg

@@ -9231,14 +9231,39 @@ var _user$project$Shipping_Order$updateStatuses = function (orders) {
 	return A2(_elm_lang$core$List$map, updateStatus, orders);
 };
 var _user$project$Shipping_Order$decrementCountdowns = function (orders) {
+	var updateCountdown = function (currentCountdown) {
+		return (_elm_lang$core$Native_Utils.cmp(currentCountdown, 0) > 0) ? (currentCountdown - 1) : currentCountdown;
+	};
 	return A2(
 		_elm_lang$core$List$map,
 		function (order) {
 			return _elm_lang$core$Native_Utils.update(
 				order,
-				{deliveryCountdown: order.deliveryCountdown - 1});
+				{
+					deliveryCountdown: updateCountdown(order.deliveryCountdown)
+				});
 		},
 		orders);
+};
+var _user$project$Shipping_Order$tidy = function (orders) {
+	var delivered = A2(
+		_elm_lang$core$List$filter,
+		function (order) {
+			return _elm_lang$core$Native_Utils.cmp(order.deliveryCountdown, 0) < 1;
+		},
+		orders);
+	var deliveredCount = _elm_lang$core$List$length(delivered);
+	var toRemove = A2(_elm_lang$core$List$take, deliveredCount - 5, delivered);
+	return A2(
+		_elm_lang$core$List$filter,
+		function (order) {
+			return !A2(_elm_lang$core$List$member, order, toRemove);
+		},
+		A2(
+			_elm_lang$core$Debug$log,
+			_elm_lang$core$Basics$toString(
+				_elm_lang$core$List$length(toRemove)),
+			orders));
 };
 var _user$project$Shipping_Order$updateOrders = function (orders) {
 	return _user$project$Shipping_Order$updateStatuses(
@@ -9403,9 +9428,6 @@ var _user$project$Shipping_View$Order = F4(
 		return {id: a, shipTo: b, status: c, deliveryCountdown: d};
 	});
 
-var _user$project$ShipOrder$tidy = function (orders) {
-	return orders;
-};
 var _user$project$ShipOrder$update = F2(
 	function (msg, model) {
 		var _p0 = msg;
@@ -9421,7 +9443,7 @@ var _user$project$ShipOrder$update = F2(
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'UpdateCountdowns':
-				var updatedOrders = _user$project$ShipOrder$tidy(
+				var updatedOrders = _user$project$Shipping_Order$tidy(
 					_user$project$Shipping_Order$updateOrders(model.orders));
 				return {
 					ctor: '_Tuple2',
